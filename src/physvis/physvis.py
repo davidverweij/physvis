@@ -2,6 +2,7 @@ from pathlib import Path
 import re
 
 import pandas as pd
+import plotly.graph_objects as go
 
 
 def create_output_folder(output_path: str) -> Path:
@@ -17,7 +18,7 @@ def create_output_folder(output_path: str) -> Path:
     return path
 
 
-def collect(input: str = "input", output: str = "output", delimiter: str = ";", save: bool = False, verbose: bool = False) -> None:
+def collect(input: str = "input", output: str = "output", delimiter: str = ";", save: bool = False, verbose: bool = False) -> pd.DataFrame:
     """Concatenates all .csv files into a pandas DataFrame (i.e. Table).
     Args:
         input: folder containing all .csv files
@@ -70,3 +71,28 @@ def collect(input: str = "input", output: str = "output", delimiter: str = ";", 
         print(frame.info());
     if save:
         frame.to_csv(path_or_buf=create_output_folder(output) / 'combined.csv', sep=';', header=True)
+
+    # return the object for further handeling
+    return frame
+
+
+def display(frame: pd.DataFrame) -> None:
+    """Create 3D renderings of Data series
+    Args:
+        frame: the data frame storing data to be rendered
+    Returns:
+        nothing
+    """
+    if not isinstance(frame, pd.DataFrame):
+        raise TypeError(f"Argument dataframe must be of type pandas DataFrame, not {type(save)}")
+    else:
+        # eight 8 x,y, and z coordinates form a cube
+        # reference: https://plotly.com/python/reference/isosurface/
+        fig= go.Figure(data=go.Isosurface(
+            x=[0,0,0,0,1,1,1,1],
+            y=[1,0,1,0,1,0,1,0],
+            z=[1,1,0,0,1,1,0,0],
+            value=[1,1,1,1,1,1,1,1],
+        ))
+
+        fig.show()
