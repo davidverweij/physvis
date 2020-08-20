@@ -76,7 +76,7 @@ def collect(input: str = "input", output: str = "output", delimiter: str = ";", 
     return frame
 
 
-def display(frame: pd.DataFrame) -> None:
+def display(frame: pd.DataFrame, rows: [int] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]) -> None:
     """Create 3D renderings of Data series
     Args:
         frame: the data frame storing data to be rendered
@@ -86,13 +86,44 @@ def display(frame: pd.DataFrame) -> None:
     if not isinstance(frame, pd.DataFrame):
         raise TypeError(f"Argument dataframe must be of type pandas DataFrame, not {type(save)}")
     else:
-        # eight 8 x,y, and z coordinates form a cube
+        # eight x, y, and z coordinates form a cube
         # reference: https://plotly.com/python/reference/isosurface/
-        fig= go.Figure(data=go.Isosurface(
-            x=[0,0,0,0,1,1,1,1],
-            y=[1,0,1,0,1,0,1,0],
-            z=[1,1,0,0,1,1,0,0],
-            value=[1,1,1,1,1,1,1,1],
-        ))
+        fig= go.Figure(
+            layout_title_text="Graph Title Here",
+        )
+
+        # for each row we want to display (defaults to the first)
+        for row in rows:
+            panda_row = frame.iloc[row]
+            x = panda_row.loc['cube_x']-1
+            y = panda_row.loc['cube_y']-1
+
+            fig.add_trace(
+                go.Isosurface(
+                    x=[x,x,x,x,x+1,x+1,x+1,x+1],
+                    y=[y+1,y,y+1,y,y+1,y,y+1,y],
+                    z=[1,1,0,0,1,1,0,0],
+                    value=[1,1,1,1,1,1,1,1],
+                    text="cube",
+                    hoverinfo="skip",
+                    showscale=False,
+                    ),
+            )
+
+        # update layout of the graphs
+        fig.update_layout(
+            scene = dict(
+                xaxis = dict(nticks=40, range=[0,20],showbackground=False),
+                yaxis = dict(nticks=40, range=[0,20],showbackground=False),
+                zaxis = dict(nticks=4, range=[0,20],),
+                xaxis_title='X AXIS TITLE',
+                yaxis_title='Y AXIS TITLE',
+                zaxis_title='Z AXIS TITLE',
+            ),
+            scene_camera = dict(
+                eye=dict(x=0., y=2.5, z=0.)
+            ),
+
+        )
 
         fig.show()
