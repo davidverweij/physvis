@@ -3,6 +3,7 @@ import re
 
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 
 def create_output_folder(output_path: str) -> Path:
@@ -88,8 +89,10 @@ def display(frame: pd.DataFrame, rows: [int] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,
     else:
         # eight x, y, and z coordinates form a cube
         # reference: https://plotly.com/python/reference/isosurface/
+        first_row = frame.iloc[0];
+        print(frame.head(20))
         fig= go.Figure(
-            layout_title_text="Graph Title Here",
+            layout_title_text=str(first_row.iloc[0:4])
         )
 
         count = 0;
@@ -100,8 +103,8 @@ def display(frame: pd.DataFrame, rows: [int] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,
             panda_row = frame.iloc[row]
             c = {
                 # coordinates
-                'x' : panda_row.loc['cube_x']-1.5,
-                'y' : panda_row.loc['cube_y']-1.5,
+                'x' : panda_row.loc['cube_x']-.5,
+                'y' : panda_row.loc['cube_y']-.5,
                 'z' : 1,
                 # half widths
                 'wy' : .5,
