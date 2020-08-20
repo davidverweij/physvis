@@ -122,14 +122,22 @@ def display(frame: pd.DataFrame, rows: [int] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,
                     x=[c['x']-c['wx'], c['x']-c['wx'], c['x']-c['wx'], c['x']-c['wx'], c['x']+c['wx'], c['x']+c['wx'], c['x']+c['wx'], c['x']+c['wx']],
                     y=[c['y']+c['wy'], c['y']-c['wy'], c['y']+c['wy'], c['y']-c['wy'], c['y']+c['wy'], c['y']-c['wy'], c['y']+c['wy'], c['y']-c['wy']],
                     z=[c['wz'],     c['wz'],     0,        0,        c['wz'],     c['wz'],     0,        0],
-                    value=[1,1,1,1,1,1,1,1],
-                    text="cube",
-                    hoverinfo="skip",
+                    value=[count,count,count,count,count,count,count,count],
+                    text=str(panda_row.loc['cube_ID']),
+                    hoverinfo="text",
                     showscale=False,
+                    contour=dict(
+                        show=True
+                        ),
+                    isomin=1,
+                    isomax=16,
+                    opacity=1.0,
                     ),
             )
 
         # update layout of the graphs
+        button_layer_1_height = 1.08
+
         fig.update_layout(
             scene = dict(
                 xaxis = dict(nticks=40, range=[0,20],showbackground=False),
@@ -142,7 +150,6 @@ def display(frame: pd.DataFrame, rows: [int] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,
             scene_camera = dict(
                 eye=dict(x=0., y=2.5, z=0.)
             ),
-
         )
 
         print(f"I counted {count} cubes")
