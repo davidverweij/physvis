@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "physvis"
+version = "0.1.0"
+description = "Analytical and statistical tool for 3D physicalisations and their perception"
+authors = ["David Verweij <davidverweij@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+keywords = ["physicalisation"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+click = "^7.1.2"
+pandas = "^1.1.0"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+phys = "physvis.console:main"
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
+
