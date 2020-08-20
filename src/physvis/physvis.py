@@ -92,17 +92,33 @@ def display(frame: pd.DataFrame, rows: [int] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,
             layout_title_text="Graph Title Here",
         )
 
+        count = 0;
+
         # for each row we want to display (defaults to the first)
         for row in rows:
+            count+=1
             panda_row = frame.iloc[row]
-            x = panda_row.loc['cube_x']-1
-            y = panda_row.loc['cube_y']-1
+            c = {
+                # coordinates
+                'x' : panda_row.loc['cube_x']-1.5,
+                'y' : panda_row.loc['cube_y']-1.5,
+                'z' : 1,
+                # half widths
+                'wy' : .5,
+                'wx' : .5,
+                # heigth
+                'wz' : 1,
+            }
+            orientation = panda_row.loc['atom_orien']
+
+            # overrule widths based on orientation
+            c['w' + orientation] = panda_row.loc['cube_height'] / (1 if orientation == 'z' else 2)
 
             fig.add_trace(
                 go.Isosurface(
-                    x=[x,x,x,x,x+1,x+1,x+1,x+1],
-                    y=[y+1,y,y+1,y,y+1,y,y+1,y],
-                    z=[1,1,0,0,1,1,0,0],
+                    x=[c['x']-c['wx'], c['x']-c['wx'], c['x']-c['wx'], c['x']-c['wx'], c['x']+c['wx'], c['x']+c['wx'], c['x']+c['wx'], c['x']+c['wx']],
+                    y=[c['y']+c['wy'], c['y']-c['wy'], c['y']+c['wy'], c['y']-c['wy'], c['y']+c['wy'], c['y']-c['wy'], c['y']+c['wy'], c['y']-c['wy']],
+                    z=[c['wz'],     c['wz'],     0,        0,        c['wz'],     c['wz'],     0,        0],
                     value=[1,1,1,1,1,1,1,1],
                     text="cube",
                     hoverinfo="skip",
@@ -125,5 +141,7 @@ def display(frame: pd.DataFrame, rows: [int] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,
             ),
 
         )
+
+        print(f"I counted {count} cubes")
 
         fig.show()
