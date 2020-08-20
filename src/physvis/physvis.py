@@ -17,10 +17,16 @@ def create_output_folder(output_path: str) -> Path:
     return path
 
 
-def convert(
-    input: str = "input", output: str = "output", delimiter: str = ";"
-) -> None:
-    print("Getting .csv data files ...")
+def collect(input: str = "input", output: str = "output", delimiter: str = ";", save: bool = False, verbose: bool = False) -> None:
+    """Concatenates all .csv files into a pandas DataFrame (i.e. Table).
+    Args:
+        input: folder containing all .csv files
+        output: output folder to store any results in
+        delimiter: input files delimiter, defaults to ';'
+        save: if true, saves all concatenated .csv as a .csv in the output folder
+    Returns:
+        A dataframe with all concatenated input .csv data
+    """
 
     all_files = list(Path(input).glob('*.csv'));
 
@@ -47,15 +53,20 @@ def convert(
         df1[['cube_x','cube_y']] = df1['coordinates'].str.split(pat=',',expand=True)
         df1 = df1.drop(columns=['coordinates'])
 
-        # prepend the filname data to all rows
+        # multiply the filname data to match the amount of rows
         df2 = pd.DataFrame( [filename.stem.split(sep='_')]*len(df1.index) ,columns=naming_columns)
 
         # remove the 'P' before participant
         df2['particip']= df2['particip'].str.lstrip('P')
 
-
+        # prepend the data from the file name to each row of the data
         li.append(pd.concat([df2,df1],axis=1))
 
+    # combine all arrays into a DataFrame, and convert to numbers where possible
     frame = pd.concat(li, axis=0, ignore_index=True)
-    print(frame.info());
-    frame.to_csv(path_or_buf=create_output_folder(output) / 'combined.csv', sep=';', header=True)
+    frame = frame.apply(pd.to_numeric, errors='ignore')
+
+    if verbose:
+        print(frame.info());
+    if save:
+        frame.to_csv(path_or_buf=create_output_folder(output) / 'combined.csv', sep=';', header=True)

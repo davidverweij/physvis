@@ -10,5 +10,10 @@ from . import physvis
 )
 @click.option("--output", "-o", default="output", help="The output location to store the result. Default is 'output'")
 @click.option("--input", "-i", default="input", help="The input location of the .csv files. Default is 'input'")
-def main(input: str, output: str, delimiter: str) -> None:
-    physvis.convert(input, output, delimiter)
+@click.option('--save', '-s', is_flag=True)
+def main(input: str, output: str, delimiter: str, save: bool) -> None:
+    click.echo(f"Collecting .csv files from {input}")
+    physvis.collect(input, output, delimiter, save, verbose = True)
+    click.echo("Done.")
+    if save:
+        click.echo(f"See the {output}/combined.csv for the combined result")
