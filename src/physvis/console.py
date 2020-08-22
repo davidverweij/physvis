@@ -27,3 +27,13 @@ def vis(input: str, output: str, delimiter: str) -> None:
     click.echo(f"Generating Visualisation")
     physvis.display(frame)
     click.echo(f"Done Visualising")
+
+
+@click.command()
+@click.option("--delimiter", "-d", default=";", help="Delimiter used in your csv files. Default is ';'")
+@click.option("--output", "-o", default="output", help="The output location to store the result. Default is 'output'")
+@click.option("--input", "-i", default="input", help="The input location of the .csv files. Default is 'input'")
+def analyse(input: str, output: str, delimiter: str) -> None:
+    click.echo(f"Collecting Data")
+    frame = physvis.calc(input, output, delimiter)
+    click.echo(f"Analysis Completed")
