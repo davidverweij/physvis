@@ -18,7 +18,7 @@ plotly = "^4.9.0"
 [tool.poetry.scripts]
 phys = "physvis.console:main"
 vis = "physvis.console:vis"
-calc = "physvis.console:analyse"
+collect = "physvis.console:collect"
 
 [build-system]
 requires = ["poetry>=0.12"]
