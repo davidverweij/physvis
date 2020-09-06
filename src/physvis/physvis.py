@@ -22,8 +22,8 @@ def create_output_folder(output_path: str) -> Path:
         path.mkdir(parents=True, exist_ok=True)
     return path
 
-def get_large_csv(input_path: str) -> pd.DataFrame:
-    """Get the large .csv as a DataFrame (must have created it first)
+def get_large_csv(input_path: str, delimiter: str = ";") -> pd.DataFrame:
+    """Get the large .csv as a DataFrame (must have created it first using collect())
     Args:
         path: the path from user in any format (relative, absolute, etc.)
     Returns:
@@ -113,8 +113,9 @@ def display(frame: pd.DataFrame, rows: [int] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,
 
 
 
-def collect2(input: str = "input", output: str = "output", delimiter: str = ";", save: bool = False ) -> None:
+def generate_large_csv(input: str = "input", output: str = "output", delimiter: str = ";", save: bool = False ) -> None:
     """Concatenates all .csv files into a pandas MultiIndex Frame (i.e. Table).
+    Performs minor tweaks to the incoming data, e.g. coordinates and naming scheme
     Args:
         input: folder containing all .csv files
         output: output folder to store any results in
@@ -124,7 +125,8 @@ def collect2(input: str = "input", output: str = "output", delimiter: str = ";",
         A dataframe with all concatenated input .csv data
     """
 
-    all_files = list(Path(input).glob('*.csv'));
+    # find all .csv files in the input folder recursively
+    all_files = list(Path(input).rglob('*.csv'));
 
     li = []
 
@@ -141,33 +143,42 @@ def collect2(input: str = "input", output: str = "output", delimiter: str = ";",
         '''
         df1 = pd.read_csv(filename, index_col=None, header=0, delimiter=delimiter, keep_default_na=False)
 
-        # removed empty (or in our case unnamed) columns, and shorten their names
+        # removed empty (or in our case unnamed) columns
         df1 = df1.loc[:, ~df1.columns.str.contains('^Unnamed')]
 
-        # split the coordinates in two columns, and remove original
-        df1[['cube_x','cube_y']] = df1['coordinates'].str.split(pat=',',expand=True)
-        df1 = df1.drop(columns=['coordinates'])
+        try:
+            # split the coordinates in two columns, and remove original
+            df1[['cube_x','cube_y']] = df1['coordinates'].str.split(pat=',',expand=True)
+            df1 = df1.drop(columns=['coordinates'])
 
-        # multiply the filname data to match the amount of rows
-        df2 = pd.DataFrame([filename.stem.split(sep='_')]*len(df1.index) ,columns=naming_columns)
+            # multiply the filname data to match the amount of rows
+            df2 = pd.DataFrame([filename.stem.split(sep='_')]*len(df1.index) ,columns=naming_columns)
 
-        # remove the 'P' before participant
-        df2['participant']= df2['participant'].str.lstrip('P')
+            # remove the 'P' before participant
+            df2['participant']= df2['participant'].str.lstrip('P')
 
-        # prepend the data from the file name to each row of the data
-        df_joined = pd.concat([df2,df1],axis=1)
+            # prepend the data from the file name to each row of the data
+            df_joined = pd.concat([df2,df1],axis=1)
 
-        # adjust header names for easy reading
-        df_joined.columns = naming_columns + layout_columns
+            # adjust header names for easy reading
+            df_joined.columns = naming_columns + layout_columns
+            # add to bigger dataframe
+            li.append(df_joined)
 
-        # add to bigger dataframe
-        li.append(df_joined)
+        except Exception as e:
+            print(f"An '{e}' error occured in one of the files: {filename}")
 
-    # combine all arrays into a DataFrame, and convert to numbers where possible
-    frame = pd.concat(li, axis=0, ignore_index=True).set_index((naming_columns + [layout_columns[0]])).sort_index()
-    frame = frame.apply(pd.to_numeric, errors='ignore')
 
-    print(frame.info())
+    if len(li) > 0:
+        # combine all arrays into a DataFrame, and convert to numbers where possible
+        frame = pd.concat(li, axis=0, ignore_index=True).set_index((naming_columns + [layout_columns[0]])).sort_index()
+        frame = frame.apply(pd.to_numeric, errors='ignore')
 
-    if save:
-        frame.to_csv(path_or_buf=create_output_folder(output) / 'combined_v2.csv', sep=';', header=True)
+        # correct the .5 x .5 offset in the data
+        frame.x = frame.x - .5
+        frame.y = frame.y - .5
+
+        print(frame.info())
+
+        if save:
+            frame.to_csv(path_or_buf=create_output_folder(output) / 'combined.csv', sep=';', header=True)
