@@ -6,8 +6,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
-naming_columns = ['participant','physicalisation','orientation','condition']
-layout_columns = ['cube', 'h', 'o', 'g', 'x', 'y']
+naming_columns = ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
 
 
 def create_output_folder(output_path: str) -> Path:
@@ -29,71 +28,69 @@ def get_large_csv(input_path: str, delimiter: str = ";") -> pd.DataFrame:
     Returns:
         A pandas dataframe
     """
-    frame = pd.read_csv(input_path, index_col=naming_columns, header=0, delimiter=delimiter, keep_default_na=False)
+    frame = pd.read_csv(input_path, index_col=naming_columns[:5], header=0, delimiter=delimiter, keep_default_na=False)
+    frame.sort_index()
     return frame
 
-def display(frame: pd.DataFrame, rows: [int] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]) -> None:
+def display(frame: pd.DataFrame, participant: str, condition: str, orientation: str, physicalisation: str) -> None:
     """Create 3D renderings of Data series
     Args:
         frame: the data frame storing data to be rendered
     Returns:
         nothing
     """
+    situation = f"Phys {physicalisation}, Participant {participant}, Condition {condition}, Orientation {orientation}"
+
     if not isinstance(frame, pd.DataFrame):
         raise TypeError(f"Argument dataframe must be of type pandas DataFrame, not {type(save)}")
     else:
+        # get the specific index from the datafra,e
+        vis = frame.loc[(int(participant), int(physicalisation), orientation, int(condition))]
+        print(vis)
+
         # eight x, y, and z coordinates form a cube
         # reference: https://plotly.com/python/reference/isosurface/
-        first_row = frame.iloc[0];
-        print(frame.head(20))
+
         fig= go.Figure(
-            layout_title_text=str(first_row.iloc[0:4])
+            layout_title_text=situation
         )
 
-        count = 0;
-
-        # for each row we want to display (defaults to the first)
-        for row in rows:
-            count+=1
-            panda_row = frame.iloc[row]
+        for row in vis.itertuples():
             c = {
                 # coordinates
-                'x' : panda_row.loc['cube_x']-.5,
-                'y' : panda_row.loc['cube_y']-.5,
+                'x' : row.x,
+                'y' : row.y,
                 'z' : 1,
                 # half widths
-                'wy' : .5,
                 'wx' : .5,
+                'wy' : .5,
                 # heigth
                 'wz' : 1,
             }
-            orientation = panda_row.loc['atom_orien']
-
             # overrule widths based on orientation
-            c['w' + orientation] = panda_row.loc['cube_height'] / (1 if orientation == 'z' else 2)
+            # note that a orientation in y, adds width to the 'x' direction - and vise versa
+            c['w' + row.o] = row.h / (1 if row.o == 'z' else 2)
 
             fig.add_trace(
                 go.Isosurface(
-                    x=[c['x']-c['wx'], c['x']-c['wx'], c['x']-c['wx'], c['x']-c['wx'], c['x']+c['wx'], c['x']+c['wx'], c['x']+c['wx'], c['x']+c['wx']],
-                    y=[c['y']+c['wy'], c['y']-c['wy'], c['y']+c['wy'], c['y']-c['wy'], c['y']+c['wy'], c['y']-c['wy'], c['y']+c['wy'], c['y']-c['wy']],
+                    x=[c['x']-c['wy'], c['x']-c['wy'], c['x']-c['wy'], c['x']-c['wy'], c['x']+c['wy'], c['x']+c['wy'], c['x']+c['wy'], c['x']+c['wy']],
+                    y=[c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx']],
                     z=[c['wz'],     c['wz'],     0,        0,        c['wz'],     c['wz'],     0,        0],
-                    value=[count,count,count,count,count,count,count,count],
-                    text=str(panda_row.loc['cube_ID']),
+                    value=[row.g]*8,
+                    text=str(row.Index),
                     hoverinfo="text",
                     showscale=False,
                     contour=dict(
                         show=True
                         ),
                     isomin=1,
-                    isomax=16,
+                    isomax=5,
                     opacity=1.0,
                     ),
             )
 
-        # update layout of the graphs
-        button_layer_1_height = 1.08
-
         fig.update_layout(
+            scene_aspectmode='cube',
             scene = dict(
                 xaxis = dict(nticks=40, range=[0,20],showbackground=False),
                 yaxis = dict(nticks=40, range=[0,20],showbackground=False),
@@ -107,10 +104,7 @@ def display(frame: pd.DataFrame, rows: [int] = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,
             ),
         )
 
-        print(f"I counted {count} cubes")
-
         fig.show()
-
 
 
 def generate_large_csv(input: str = "input", output: str = "output", delimiter: str = ";", save: bool = False ) -> None:
@@ -152,7 +146,7 @@ def generate_large_csv(input: str = "input", output: str = "output", delimiter: 
             df1 = df1.drop(columns=['coordinates'])
 
             # multiply the filname data to match the amount of rows
-            df2 = pd.DataFrame([filename.stem.split(sep='_')]*len(df1.index) ,columns=naming_columns)
+            df2 = pd.DataFrame([filename.stem.split(sep='_')]*len(df1.index) ,columns=naming_columns[:4])
 
             # remove the 'P' before participant
             df2['participant']= df2['participant'].str.lstrip('P')
@@ -161,7 +155,7 @@ def generate_large_csv(input: str = "input", output: str = "output", delimiter: 
             df_joined = pd.concat([df2,df1],axis=1)
 
             # adjust header names for easy reading
-            df_joined.columns = naming_columns + layout_columns
+            df_joined.columns = naming_columns
             # add to bigger dataframe
             li.append(df_joined)
 
@@ -171,12 +165,14 @@ def generate_large_csv(input: str = "input", output: str = "output", delimiter: 
 
     if len(li) > 0:
         # combine all arrays into a DataFrame, and convert to numbers where possible
-        frame = pd.concat(li, axis=0, ignore_index=True).set_index((naming_columns + [layout_columns[0]])).sort_index()
+        frame = pd.concat(li, axis=0, ignore_index=True).set_index(naming_columns[:5]).sort_index()
         frame = frame.apply(pd.to_numeric, errors='ignore')
 
         # correct the .5 x .5 offset in the data
         frame.x = frame.x - .5
         frame.y = frame.y - .5
+
+        frame.sort_index()
 
         print(frame.info())
 
