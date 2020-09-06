@@ -55,6 +55,9 @@ def display(frame: pd.DataFrame, participant: str, condition: str, orientation: 
             layout_title_text=situation
         )
 
+        # numbers hovering over cubes
+        annotations = []
+
         for row in vis.itertuples():
             c = {
                 # coordinates
@@ -77,16 +80,29 @@ def display(frame: pd.DataFrame, participant: str, condition: str, orientation: 
                     y=[c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx']],
                     z=[c['wz'],     c['wz'],     0,        0,        c['wz'],     c['wz'],     0,        0],
                     value=[row.g]*8,
-                    text=str(row.Index),
-                    hoverinfo="text",
+                    hoverinfo="none",
                     showscale=False,
+                    opacity=1.0,
                     contour=dict(
                         show=True
                         ),
                     isomin=1,
                     isomax=5,
-                    opacity=1.0,
                     ),
+            )
+
+            annotations.append(dict(
+                x=c['x'],
+                y=c['y'],
+                z=c['wz'] + .5,
+                text=str(row.Index),
+                showarrow=False,
+                bgcolor="rgba(255,255,255,.7)",
+                font=dict(
+                    color="black",
+                    size=12
+                ),
+                )
             )
 
         fig.update_layout(
@@ -98,6 +114,7 @@ def display(frame: pd.DataFrame, participant: str, condition: str, orientation: 
                 xaxis_title='X AXIS TITLE',
                 yaxis_title='Y AXIS TITLE',
                 zaxis_title='Z AXIS TITLE',
+                annotations = annotations,
             ),
             scene_camera = dict(
                 eye=dict(x=0., y=2.5, z=0.)
