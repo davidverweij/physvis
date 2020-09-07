@@ -39,7 +39,7 @@ def display(frame: pd.DataFrame, participant: str, condition: str, orientation: 
     Returns:
         nothing
     """
-    situation = f"Phys {physicalisation}, Participant {participant}, Condition {condition}, Orientation {orientation}"
+    situation = f"Phys{physicalisation}_P{participant}_Condition{condition}_{orientation}"
 
     if not isinstance(frame, pd.DataFrame):
         raise TypeError(f"Argument dataframe must be of type pandas DataFrame, not {type(save)}")
@@ -121,6 +121,7 @@ def display(frame: pd.DataFrame, participant: str, condition: str, orientation: 
             ),
         )
 
+        # fig.write_html(f"output/{situation}.html")
         fig.show()
 
 
