@@ -1,3 +1,8 @@
+from pathlib import Path
+import pandas as pd
+
+naming_columns = ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
+
 def create_output_folder(output_path: str) -> Path:
     """Creates a path to store output data if it does not exists.
     Args:

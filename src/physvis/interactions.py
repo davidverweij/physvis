@@ -2,35 +2,10 @@ from pathlib import Path
 import re
 
 import pandas as pd
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+import plotly.graph_objects as plot
 
+from . import helpers
 
-naming_columns = ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
-
-
-def create_output_folder(output_path: str) -> Path:
-    """Creates a path to store output data if it does not exists.
-    Args:
-        path: the path from user in any format (relative, absolute, etc.)
-    Returns:
-        A path to store output data.
-    """
-    path = Path(output_path)
-    if not path.exists():
-        path.mkdir(parents=True, exist_ok=True)
-    return path
-
-def get_large_csv(input_path: str, delimiter: str = ";") -> pd.DataFrame:
-    """Get the large .csv as a DataFrame (must have created it first using collect())
-    Args:
-        path: the path from user in any format (relative, absolute, etc.)
-    Returns:
-        A pandas dataframe
-    """
-    frame = pd.read_csv(input_path, index_col=naming_columns[:5], header=0, delimiter=delimiter, keep_default_na=False)
-    frame.sort_index()
-    return frame
 
 def display(frame: pd.DataFrame, participant: str, condition: str, orientation: str, physicalisation: str) -> None:
     """Create 3D renderings of Data series
@@ -51,7 +26,7 @@ def display(frame: pd.DataFrame, participant: str, condition: str, orientation: 
         # eight x, y, and z coordinates form a cube
         # reference: https://plotly.com/python/reference/isosurface/
 
-        fig= go.Figure(
+        fig= plot.Figure(
             layout_title_text=situation
         )
 
@@ -75,7 +50,7 @@ def display(frame: pd.DataFrame, participant: str, condition: str, orientation: 
             c['w' + row.o] = row.h / (1 if row.o == 'z' else 2)
 
             fig.add_trace(
-                go.Isosurface(
+                plot.Isosurface(
                     x=[c['x']-c['wy'], c['x']-c['wy'], c['x']-c['wy'], c['x']-c['wy'], c['x']+c['wy'], c['x']+c['wy'], c['x']+c['wy'], c['x']+c['wy']],
                     y=[c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx']],
                     z=[c['wz'],     c['wz'],     0,        0,        c['wz'],     c['wz'],     0,        0],
@@ -164,7 +139,7 @@ def generate_large_csv(input: str = "input", output: str = "output", delimiter: 
             df1 = df1.drop(columns=['coordinates'])
 
             # multiply the filname data to match the amount of rows
-            df2 = pd.DataFrame([filename.stem.split(sep='_')]*len(df1.index) ,columns=naming_columns[:4])
+            df2 = pd.DataFrame([filename.stem.split(sep='_')]*len(df1.index) ,columns=helpers.naming_columns[:4])
 
             # remove the 'P' before participant
             df2['participant']= df2['participant'].str.lstrip('P')
@@ -173,7 +148,7 @@ def generate_large_csv(input: str = "input", output: str = "output", delimiter: 
             df_joined = pd.concat([df2,df1],axis=1)
 
             # adjust header names for easy reading
-            df_joined.columns = naming_columns
+            df_joined.columns = helpers.naming_columns
             # add to bigger dataframe
             li.append(df_joined)
 
@@ -183,7 +158,7 @@ def generate_large_csv(input: str = "input", output: str = "output", delimiter: 
 
     if len(li) > 0:
         # combine all arrays into a DataFrame, and convert to numbers where possible
-        frame = pd.concat(li, axis=0, ignore_index=True).set_index(naming_columns[:5]).sort_index()
+        frame = pd.concat(li, axis=0, ignore_index=True).set_index(helpers.naming_columns[:5]).sort_index()
         frame = frame.apply(pd.to_numeric, errors='ignore')
 
         # correct the .5 x .5 offset in the data
