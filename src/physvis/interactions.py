@@ -19,7 +19,7 @@ def display(frame: pd.DataFrame, participant: str, condition: str, orientation: 
     if not isinstance(frame, pd.DataFrame):
         raise TypeError(f"Argument dataframe must be of type pandas DataFrame, not {type(save)}")
     else:
-        # get the specific index from the datafra,e
+        # get the specific index from the dataframe
         vis = frame.loc[(int(participant), int(physicalisation), orientation, int(condition))]
         print(vis)
 
