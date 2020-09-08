@@ -3,6 +3,7 @@ from tqdm import tqdm
 
 # looks like: ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
 from .helpers import naming_columns as nc
+from . import helpers
 
 
 # initiate tqdm pandas methods
@@ -20,41 +21,37 @@ def move_types_overall(frame: pd.DataFrame) -> None:
 
     # method local to this method
     def _change_at_cond_1(x):
-        uniques = x.drop_duplicates(subset=x.columns.difference([nc[3]]))
+        # prep for 2. remove any duplicates based on orientation, x or y changes
+        uniques = x.drop_duplicates(subset=['o','x','y'])
 
-        # 1. check if there are 3 rows, else - cube was removed = change!
-        # 2. check if any of the columns are not the same (ignore cluster?)
+        yes_change = pd.Series([1], index=['change_at_cond_1'])
+        no_change = pd.Series([0], index=['change_at_cond_1'])
 
-        # if more than 1 rows are left, some change happend!
-        if len(uniques) > 1:
-            # if condition '1' is still left, the cube was changed at condition 1
-            if any(uniques.index.isin([2],level=nc[3])):
-                return True
-        # else, nothing happened
-        return False
+        # 1. if there are less than 3 rows in the original, a cube was removed
+        if (len(x) < 3):
+            # if the condition '1' is not present, it was removed then = change
+            if not any(x.index.isin([1],level=nc[3])):
+                return 1
 
-    # new plan, check if change and add as a column to the dataframe to keep the info
+        # 2. or if, when duplicates are removed, multiple are present, a change occured
+        elif (len(uniques) > 1):
 
+            # if condition '1' is still left, the cube was changed at condition
+            if any(uniques.index.isin([1],level=nc[3])):
+                return 1
+
+        # nothing happened, return not a number (will be filtered)
+        return 0
+
+    frame.to_csv(path_or_buf=helpers.create_output_folder('output') / 'test_save_changes_0_1.csv', sep=';', header=True)
 
     # looks like: ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
-    result = frame.groupby([nc[1], nc[0], nc[2], nc[4]]).progress_apply(_change_at_cond_1).value_counts(subset=[nc[1],nc[4]], sort=False)
+    result = frame.groupby([nc[1], nc[0], nc[2], nc[4]]).progress_apply(_change_at_cond_1)
+    summed = result.groupby([nc[1], nc[4]]).sum()
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        print(result)
+        print(summed)
 
-    '''
-    # arrange data for each phys, for each participant, for each orientation
-    for name, group in frame.groupby([nc[1], nc[0], nc[2]):
-        # we are left with groups showing cube data over the three conditions
-
-        for subname, subgroup in group.groupby([nc[4]]):
-            # ignoring the condition, remove duplicates
-            subgroup = subgroup.drop_duplicates(subset=subgroup.columns.difference([nc[3]]))
-            if len(subgroup) > 1:
-                print(subgroup)
-                print(len(subgroup))
-            # print(subgroup.apply(lambda s: len(s.unique()) > 1))
-
-    '''
+    summed.to_csv(path_or_buf=helpers.create_output_folder('output') / 'changes_0_1.csv', sep=';', header=True)
 
 
 
