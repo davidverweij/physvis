@@ -1,7 +1,12 @@
 import pandas as pd
+from tqdm import tqdm
 
 # looks like: ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
 from .helpers import naming_columns as nc
+
+
+# initiate tqdm pandas methods
+tqdm.pandas()
 
 def move_types_overall(frame: pd.DataFrame) -> None:
     """Calculates various stats about the different moves participants made
@@ -17,6 +22,9 @@ def move_types_overall(frame: pd.DataFrame) -> None:
     def _change_at_cond_1(x):
         uniques = x.drop_duplicates(subset=x.columns.difference([nc[3]]))
 
+        # 1. check if there are 3 rows, else - cube was removed = change!
+        # 2. check if any of the columns are not the same (ignore cluster?)
+
         # if more than 1 rows are left, some change happend!
         if len(uniques) > 1:
             # if condition '1' is still left, the cube was changed at condition 1
@@ -25,7 +33,11 @@ def move_types_overall(frame: pd.DataFrame) -> None:
         # else, nothing happened
         return False
 
-    result = frame.groupby([nc[1], nc[0], nc[2], nc[4]]).filter(_change_at_cond_1).value_counts(subset=[nc[1],nc[4]], sort=False)
+    # new plan, check if change and add as a column to the dataframe to keep the info
+
+
+    # looks like: ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
+    result = frame.groupby([nc[1], nc[0], nc[2], nc[4]]).progress_apply(_change_at_cond_1).value_counts(subset=[nc[1],nc[4]], sort=False)
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         print(result)
 
