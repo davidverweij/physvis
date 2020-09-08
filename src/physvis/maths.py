@@ -20,42 +20,43 @@ def move_types_overall(frame: pd.DataFrame) -> None:
     """
 
     # method local to this method
-    def _change_at_cond_1(x):
-        # prep for 2. remove any duplicates based on orientation, x or y changes
-        uniques = x.drop_duplicates(subset=['o','x','y'])
+    def _chosen_cubes_to_change(x):
+        x = x.loc(axis=1)['o','x','y']  # drop other columns
+        diff = x.iloc[0] == x.iloc[2]   # compare elements rows 1 and 3
+        return pd.Series(
+            [1 if not x.iloc[0].equals(x.iloc[1]) else 0,
+             1 if not x.iloc[0].equals(x.iloc[2]) else 0,
+             1 if not x.iloc[1].equals(x.iloc[2]) else 0,
+             1 if not x.iloc[0].equals(x.iloc[1]) and     x.iloc[1].equals(x.iloc[2]) else 0,
+             1 if     x.iloc[0].equals(x.iloc[1]) and not x.iloc[1].equals(x.iloc[2]) else 0,
+             1 if not x.iloc[0].equals(x.iloc[1]) and not x.iloc[1].equals(x.iloc[2]) else 0,
 
-        yes_change = pd.Series([1], index=['change_at_cond_1'])
-        no_change = pd.Series([0], index=['change_at_cond_1'])
+             # 1 if diff.all() else 0,
+             # 1 if diff['o'] and not diff['x','y'].all() else 0,
+             # 1 if diff['x','y'].all() and not diff['o'] else 0,
+             ],
+            index=[
+                 'sum_changes_0_1',
+                 'sum_change_0_2',
+                 'sum_changes_1_2',
+                 'only_changes_0_1',
+                 'only_changes_1_2',
+                 'both_changes_0_1_2',
 
-        # 1. if there are less than 3 rows in the original, a cube was removed
-        if (len(x) < 3):
-            # if the condition '1' is not present, it was removed then = change
-            if not any(x.index.isin([1],level=nc[3])):
-                return 1
+                 # 'changes_0_2_all_o_x_y',
+                 # 'changes_0_2_only_o_no_x_y',
+                 # 'changes_0_2_only_x_y_no_o'
 
-        # 2. or if, when duplicates are removed, multiple are present, a change occured
-        elif (len(uniques) > 1):
+                 ])
 
-            # if condition '1' is still left, the cube was changed at condition
-            if any(uniques.index.isin([1],level=nc[3])):
-                return 1
+    conditions = frame.groupby(['physicalisation', 'participant', 'orientation', 'cube'])
+    cubes_changed = conditions.progress_apply(_chosen_cubes_to_change)
+    summed = cubes_changed.groupby([nc[1], nc[4]]).sum()
 
-        # nothing happened, return not a number (will be filtered)
-        return 0
-
-    frame.to_csv(path_or_buf=helpers.create_output_folder('output') / 'test_save_changes_0_1.csv', sep=';', header=True)
-
-    # looks like: ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
-    result = frame.groupby([nc[1], nc[0], nc[2], nc[4]]).progress_apply(_change_at_cond_1)
-    summed = result.groupby([nc[1], nc[4]]).sum()
-    unstacked = summed.unstack()
-    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        print(summed)
-        print(unstacked)
-
-
-    unstacked.to_csv(path_or_buf=helpers.create_output_folder('output') / 'changes_0_1_unstacked.csv', sep=';', header=True)
-    summed.to_csv(path_or_buf=helpers.create_output_folder('output') / 'changes_0_1.csv', sep=';', header=True)
+    for column in summed:
+        subresult = summed[column].unstack()
+        print(subresult)
+        subresult.to_csv(path_or_buf=helpers.create_output_folder('output') / f"conditions_ID_{column}.csv", sep=';', header=True)
 
 
 

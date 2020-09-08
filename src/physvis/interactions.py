@@ -2,6 +2,7 @@ from pathlib import Path
 import re
 
 import pandas as pd
+from tqdm import tqdm
 import plotly.graph_objects as plot
 
 from . import helpers
@@ -117,7 +118,7 @@ def generate_large_csv(input: str = "input", output: str = "output", delimiter: 
 
     li = []
 
-    for filename in all_files:
+    for i, filename in enumerate(tqdm(all_files)):
         ''' split the filename into columns
         Expecting filesnames in the format PX_0_N_0
             Participant = [P1-P20]
@@ -167,7 +168,12 @@ def generate_large_csv(input: str = "input", output: str = "output", delimiter: 
 
         frame.sort_index()
 
+        # fill in the missing values, following https://stackoverflow.com/a/41274715/7053198
+        # creates floats, but ensures presence of all rows/columns
+        new_index = pd.MultiIndex.from_product(frame.index.levels)
+        frame = frame.reindex(new_index)
+
         print(frame.info())
 
         if save:
-            frame.to_csv(path_or_buf=create_output_folder(output) / 'combined.csv', sep=';', header=True)
+            frame.to_csv(path_or_buf=helpers.create_output_folder(output) / 'combined.csv', sep=';', header=True)
