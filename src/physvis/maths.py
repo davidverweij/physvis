@@ -48,9 +48,13 @@ def move_types_overall(frame: pd.DataFrame) -> None:
     # looks like: ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
     result = frame.groupby([nc[1], nc[0], nc[2], nc[4]]).progress_apply(_change_at_cond_1)
     summed = result.groupby([nc[1], nc[4]]).sum()
+    unstacked = summed.unstack()
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         print(summed)
+        print(unstacked)
 
+
+    unstacked.to_csv(path_or_buf=helpers.create_output_folder('output') / 'changes_0_1_unstacked.csv', sep=';', header=True)
     summed.to_csv(path_or_buf=helpers.create_output_folder('output') / 'changes_0_1.csv', sep=';', header=True)
 
 
