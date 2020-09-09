@@ -1,7 +1,7 @@
 import pandas as pd
 from tqdm import tqdm
+import plotly.express as px
 
-# looks like: ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
 from .helpers import naming_columns as nc
 from . import helpers
 
@@ -23,10 +23,23 @@ def move_types_overall(frame: pd.DataFrame) -> None:
     def _chosen_cubes_to_change(x):
         x = x.loc(axis=1)['o','x','y']  # drop other columns
         diff = x.iloc[0] == x.iloc[2]   # compare elements rows 1 and 3
+
+
+        # return pd.DataFrame({
+        #     'Type_of_Change' : ['only_0-1','only_1-2','both'],
+        #     'count': [
+        #         1 if not x.iloc[0].equals(x.iloc[1]) and     x.iloc[1].equals(x.iloc[2]) else 0,
+        #         1 if     x.iloc[0].equals(x.iloc[1]) and not x.iloc[1].equals(x.iloc[2]) else 0,
+        #         1 if not x.iloc[0].equals(x.iloc[1]) and not x.iloc[1].equals(x.iloc[2]) else 0,
+        #         ]
+        # }).groupby('Type_of_Change')
+
+
+
         return pd.Series(
-            [1 if not x.iloc[0].equals(x.iloc[1]) else 0,
-             1 if not x.iloc[0].equals(x.iloc[2]) else 0,
-             1 if not x.iloc[1].equals(x.iloc[2]) else 0,
+            [ 1 if not x.iloc[0].equals(x.iloc[2]) else 0,
+             # 1 if not x.iloc[0].equals(x.iloc[1]) else 0,
+             # 1 if not x.iloc[1].equals(x.iloc[2]) else 0,
              1 if not x.iloc[0].equals(x.iloc[1]) and     x.iloc[1].equals(x.iloc[2]) else 0,
              1 if     x.iloc[0].equals(x.iloc[1]) and not x.iloc[1].equals(x.iloc[2]) else 0,
              1 if not x.iloc[0].equals(x.iloc[1]) and not x.iloc[1].equals(x.iloc[2]) else 0,
@@ -36,12 +49,12 @@ def move_types_overall(frame: pd.DataFrame) -> None:
              # 1 if diff['x','y'].all() and not diff['o'] else 0,
              ],
             index=[
-                 'sum_changes_0_1',
-                 'sum_change_0_2',
-                 'sum_changes_1_2',
-                 'only_changes_0_1',
-                 'only_changes_1_2',
-                 'both_changes_0_1_2',
+                 'total',
+                 # 'sum_changes_0_1',
+                 # 'sum_changes_1_2',
+                 'only_0-1',
+                 'only_1-2',
+                 'both',
 
                  # 'changes_0_2_all_o_x_y',
                  # 'changes_0_2_only_o_no_x_y',
@@ -49,15 +62,25 @@ def move_types_overall(frame: pd.DataFrame) -> None:
 
                  ])
 
+    # ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
     conditions = frame.groupby(['physicalisation', 'participant', 'orientation', 'cube'])
     cubes_changed = conditions.progress_apply(_chosen_cubes_to_change)
-    summed = cubes_changed.groupby([nc[1], nc[4]]).sum()
+    cubes_changed.columns.name = 'any_change_at'
+    cubes_changed = cubes_changed.stack()
+    cubes_changed.name = 'moves'
+    summed_per_cube = cubes_changed.groupby([nc[1], nc[4], 'any_change_at']).sum()
+    tabular = summed_per_cube.reset_index().pivot(columns='cube', index=['physicalisation','any_change_at'])
+    summed_per_cube.to_csv(path_or_buf=helpers.create_output_folder('output') / f"conditions_ID_change.csv", sep=';', header=True)
+    tabular.to_csv(path_or_buf=helpers.create_output_folder('output') / f"conditions_ID_change_tabular.csv", sep=';', header=True)
 
-    for column in summed:
-        subresult = summed[column].unstack()
+    # plotting a grouped AND stacked bar chart: https://stackoverflow.com/questions/45055661/combine-grouped-and-stacked-bar-graph-in-r
+
+    '''
+    for column in summed_per_cube:
+        subresult = summed_per_cube[column].unstack()
         print(subresult)
         subresult.to_csv(path_or_buf=helpers.create_output_folder('output') / f"conditions_ID_{column}.csv", sep=';', header=True)
-
+    '''
 
 
 '''
