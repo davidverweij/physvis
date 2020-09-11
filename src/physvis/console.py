@@ -65,6 +65,24 @@ def collect(input: str, delimiter: str) -> None:
     click.echo(f"See the output/combined.csv for the combined result")
 
 
+
+@click.command()
+@click.option("--delimiter", "-d", default=";", help="Delimiter used in your csv files. Default is ';'")
+@click.option("--input", "-i", default="output/combined.csv", help="The location of the large .csv file compiled by collect(). Default is 'output/combined.csv'")
+def calc(input: str, delimiter: str) -> None:
+    click.echo(f"Press 'control+c' to abort this program at any point.")
+    frame = helpers.get_large_csv(input, delimiter)
+    # print(frame.info())
+    print(maths.move_types_overall(frame))
+
+
+
+
+
+
+
+'''
+# optional choice of performing different calculations, removed as not needed anymore
 @click.command()
 @click.option("--delimiter", "-d", default=";", help="Delimiter used in your csv files. Default is ';'")
 @click.option("--input", "-i", default="output/combined.csv", help="The location of the large .csv file compiled by collect(). Default is 'output/combined.csv'")
@@ -107,3 +125,4 @@ def calc(input: str, delimiter: str) -> None:
 
 
     click.echo(f"\nTill next time!\n")
+'''
