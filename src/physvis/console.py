@@ -65,17 +65,49 @@ def collect(input: str, delimiter: str) -> None:
     click.echo(f"See the output/combined.csv for the combined result")
 
 
-
 @click.command()
 @click.option("--delimiter", "-d", default=";", help="Delimiter used in your csv files. Default is ';'")
 @click.option("--input", "-i", default="output/combined.csv", help="The location of the large .csv file compiled by collect(). Default is 'output/combined.csv'")
 def calc(input: str, delimiter: str) -> None:
     click.echo(f"Press 'control+c' to abort this program at any point.")
+
+    click.echo(f"\nWhich calculation do you want to perform?\n")
     frame = helpers.get_large_csv(input, delimiter)
     # print(frame.info())
-    print(maths.move_types_overall(frame))
+
+    repeat = True
+
+    while repeat:
+        repeat = False
+
+        # get user input
+        possible_functions = [x[0] for x in inspect.getmembers(maths, inspect.isfunction)]
+        possible_functions.reverse()
+        show_options = [str(i) + '. ' + x for i, x in enumerate(possible_functions, 1)]
+        print("\n".join(show_options) + "\n")
+
+        chosen_function_nr = click.prompt("  Calulation", type=click.Choice([str(x) for x in range(1,len(possible_functions)+1)]))
+        chosen_function = possible_functions[int(chosen_function_nr)-1]
+
+        # display result, or err
+        try:
+            click.echo(f"\nRunning '{chosen_function}':\n")
+
+            # run the chosen method, with options: getattr(maths, chosen_function)(**options)
+            result = getattr(maths, chosen_function)(frame)
+            print(result)
+
+            click.echo(f"\nFinished calculation.\n")
+        except Exception as e:
+            print(f"An error occured in the {chosen_function} calculation: {e}")
+
+        # possibly visualise another one
+        repeat = False
+        if click.confirm('Would you like to conduct another calculation?'):
+            repeat = True
 
 
+    click.echo(f"\nTill next time!\n")
 
 
 
