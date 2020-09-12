@@ -105,6 +105,9 @@ def proximity_changes(frame: pd.DataFrame) -> None:
     """
     Internal proximity = the average distance of all cluster's cubes to its centroid
     Internal proximity = the average distance of all cluster's centroids to it's closest neighbouring cluster
+    This is the Davies-Bouldin index https://en.wikipedia.org/wiki/Davies%E2%80%93Bouldin_index
+    how about silhouette? https://en.wikipedia.org/wiki/Silhouette_(clustering)
+    how
     Args:
         frame: the data frame storing data to be rendered
     Returns:
@@ -129,28 +132,64 @@ def proximity_changes(frame: pd.DataFrame) -> None:
 
             conditions = group.groupby(['condition']).apply(_check_per_condition)
 
-            try:
-                internal_incease = 1 if conditions.iloc[0]['distance'] < conditions.iloc[2]['distance'] else 0
+            if len(conditions) > 2:
+                centroid_before = conditions.iloc[0]['centroid']
+                centroid_after = conditions.iloc[2]['centroid']
+                distance_before = conditions.iloc[0]['distance']
+                distance_after = conditions.iloc[2]['distance']
+                internal_increase = 1 if conditions.iloc[0]['distance'] < conditions.iloc[2]['distance'] else 0
                 internal_decrease = 1 if conditions.iloc[0]['distance'] > conditions.iloc[2]['distance'] else 0
+                cluster_removed = 0
+            else:
+                centroid_before = np.nan
+                centroid_after = np.nan
+                distance_before = 0
+                distance_after = 0
+                internal_increase = 0
+                internal_decrease = 0
+                cluster_removed = 1
 
-                return pd.Series(
-                    [internal_incease,
-                     internal_decrease
-                     ],
-                    index=['internal_increase', 'internal_decrease'])
-            except Exception as e:
-                print(f"error at {group.index}: {e}")
+            return pd.Series(
+                [centroid_before,
+                 centroid_after,
+                 distance_before,
+                 distance_after,
+                 internal_increase,
+                 internal_decrease,
+                 cluster_removed
+                 ],
+                index=['centroid_before', 'centroid_after', 'distance_before', 'distance_after', 'cohesion_decreased', 'cohesion_increased', 'clusters_gone'])
+
+        def _check_seperation(group):
+            # calculate whether separation was increased or decreased
+            # for each centroid find closest neighbour and check if the distance was increased or decreased
+            for index, row in group.iterrows():
+                before = row['centroid_before']
+                after = row['centroid_after']
+                compare_to = group.drop(index=index)
+
+                distance_before = 0
+                distance_after = 0
+
+                # calculate the smallest distance to any of the other centroids
+                min_distance_before = np.hypot((compare_to['centroid_before'][0] - before[0]),(compare_to['centroid_before'][1] - before[1])).min()
+                min_distance_after = np.hypot((compare_to['centroid_after'][0] - after[0]),(compare_to['centroid_after'][1] - after[1])).min()
+
+
 
         # per group and per condition ...
-        groups = x.groupby(['g'])[['x','y']].apply(_check_per_group)
-        return groups
+
+        result = x.groupby(['g'])[['x','y']].apply(_check_per_group)
+
+        # result[['seperation_increased','seperation_decreased'] = result.apply(_check_seperation)
+        # result = result.sum()
 
 
+        # if it occurered more than once in any group, just pen down 1 (thus the max of all of these become 80)
+        # result = result.transform(lambda x: (1 if x > 0 else 0))
 
-        # x_checked = x.groupby(['cube']).apply(_check_per_cube)  # per cube (3 rows of condition 0,1,2) check if there are changed
-        # x_summed = x_checked.sum() # sum all the 1's over the cubed (i.e. how many were changed)
-        # return x_summed
-        return 1
+        return result
+
 
 
     # columns look like: ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
@@ -164,18 +203,22 @@ def proximity_changes(frame: pd.DataFrame) -> None:
     frame.set_index(['physicalisation', 'participant', 'orientation', 'g', 'condition', 'cube'], inplace=True)
 
     # per trial...
-    conditions = frame.groupby(['physicalisation', 'participant', 'orientation'])
+    conditions = frame.query('physicalisation == 2 and participant == 4 and orientation == "E"').groupby(['physicalisation', 'participant', 'orientation'])
+    # conditions = frame.groupby(['physicalisation', 'participant', 'orientation'])
     clusters_change = conditions.progress_apply(_centroids_distances)
-    print(clusters_change)
 
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        print(clusters_change)
+    # print(clusters_change.query('physicalisation == 2 and participant == 16 and orientation == "E"'))
+    # print(clusters_change.query('physicalisation == 2 and participant == 3 and orientation == "E"'))
+    # print(clusters_change.query('physicalisation == 2 and participant == 2 and orientation == "E"'))
+    # print(clusters_change.query('physicalisation == 2 and participant == 15 and orientation == "E"'))
 
-    # calculate changes then:
+    per_participant = clusters_change.groupby(['physicalisation', 'participant']).sum()
+    per_phys = clusters_change.groupby(['physicalisation']).sum()
 
-    # count occurance of summed moves (e.g. 2x 16 cubes, 1x 3 cubes, etc)
-    change_occurance = clusters_change.groupby('physicalisation')['changed'].value_counts(sort=False)
-    # make counted changes the header, and fill in the gaps with 0
-    change_occurance_table = change_occurance.unstack(level='changed', fill_value=0)
-    # save to file
-    change_occurance_table.to_csv(path_or_buf=helpers.create_output_folder('output') / f"count_if_change.csv", sep=';', header=True)
+    # save
+    # per_participant.to_csv(path_or_buf=helpers.create_output_folder('output') / f"cluster_cohesion_per_participant.csv", sep=';', header=True)
+    # per_phys.to_csv(path_or_buf=helpers.create_output_folder('output') / f"cluster_cohesion.csv", sep=';', header=True)
 
-    return change_occurance_table
+    return per_phys
