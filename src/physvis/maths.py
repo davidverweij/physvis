@@ -1,4 +1,5 @@
 import numpy as np
+from decimal import Decimal, ROUND_HALF_EVEN, DecimalException, InvalidOperation
 
 import pandas as pd
 from tqdm import tqdm
@@ -101,7 +102,10 @@ def IDs_cubes_moved(frame: pd.DataFrame) -> None:
 
     # plotting a grouped AND stacked bar chart: https://stackoverflow.com/questions/45055661/combine-grouped-and-stacked-bar-graph-in-r
 
-def proximity_changes(frame: pd.DataFrame) -> None:
+def proximity_changes_phase1(frame: pd.DataFrame) -> None:
+    return proximity_changes(frame, phase = 1, name='phase1')
+
+def proximity_changes(frame: pd.DataFrame, phase: int = 2, name: str = 'phase2') -> None:
     """
     Internal proximity = the average distance of all cluster's cubes to its centroid
     Internal proximity = the average distance of all cluster's centroids to it's closest neighbouring cluster
@@ -110,6 +114,7 @@ def proximity_changes(frame: pd.DataFrame) -> None:
     how
     Args:
         frame: the data frame storing data to be rendered
+        phase: choose 1 or 2
     Returns:
         nothing
     """
@@ -123,7 +128,7 @@ def proximity_changes(frame: pd.DataFrame) -> None:
                 # calculate the centroid
                 centroid = cond.mean()
                 # calculate mean distance to the centroid
-                mean_distance = np.hypot((cond['x'] - centroid.x),(cond['y'] - centroid.y)).mean()
+                mean_distance = np.nanmean(np.hypot((cond['x'] - centroid.x),(cond['y'] - centroid.y)))
 
                 return pd.Series([
                     centroid.values.tolist(),
@@ -132,17 +137,24 @@ def proximity_changes(frame: pd.DataFrame) -> None:
 
             conditions = group.groupby(['condition']).apply(_check_per_condition)
 
-            if len(conditions) > 2:
+            if len(conditions) > phase:
+                # round off
+                try:
+                    distance_before = Decimal(conditions.iloc[0]['distance']).quantize(Decimal('.01'), rounding=ROUND_HALF_EVEN)
+                    distance_after = Decimal(conditions.iloc[phase]['distance']).quantize(Decimal('.01'), rounding=ROUND_HALF_EVEN)
+                except (ValueError, DecimalException, InvalidOperation) as e:
+                    print(conditions)
+
+                    print(f"error: {e}, caused in 1 {group.index}")
+
                 centroid_before = conditions.iloc[0]['centroid']
-                centroid_after = conditions.iloc[2]['centroid']
-                distance_before = conditions.iloc[0]['distance']
-                distance_after = conditions.iloc[2]['distance']
-                internal_increase = 1 if conditions.iloc[0]['distance'] < conditions.iloc[2]['distance'] else 0
-                internal_decrease = 1 if conditions.iloc[0]['distance'] > conditions.iloc[2]['distance'] else 0
+                centroid_after = conditions.iloc[phase]['centroid']
+                internal_increase = 1 if distance_before < distance_after else 0
+                internal_decrease = 1 if distance_before > distance_after else 0
                 cluster_removed = 0
             else:
-                centroid_before = np.nan
-                centroid_after = np.nan
+                centroid_before = conditions.iloc[0]['centroid']
+                centroid_after = [np.nan, np.nan]
                 distance_before = 0
                 distance_after = 0
                 internal_increase = 0
@@ -150,43 +162,69 @@ def proximity_changes(frame: pd.DataFrame) -> None:
                 cluster_removed = 1
 
             return pd.Series(
-                [centroid_before,
-                 centroid_after,
+                [centroid_before[0],
+                 centroid_before[1],
+                 centroid_after[0],
+                 centroid_after[1],
                  distance_before,
                  distance_after,
                  internal_increase,
                  internal_decrease,
                  cluster_removed
                  ],
-                index=['centroid_before', 'centroid_after', 'distance_before', 'distance_after', 'cohesion_decreased', 'cohesion_increased', 'clusters_gone'])
+                index=['c_before_x','c_before_y', 'c_after_x','c_after_y', 'd_before', 'd_after', 'cohesion-', 'cohesion+', 'gone'])
 
         def _check_seperation(group):
             # calculate whether separation was increased or decreased
             # for each centroid find closest neighbour and check if the distance was increased or decreased
-            for index, row in group.iterrows():
-                before = row['centroid_before']
-                after = row['centroid_after']
-                compare_to = group.drop(index=index)
+            seperation_increase = []
+            seperation_decrease = []
+            # assuming no duplicates exist
+            # print(f"group = {group}")
 
-                distance_before = 0
-                distance_after = 0
+            if len(group) > 1:
+                for cluster in group.index.get_level_values('g'):
+                    # print(f"cluster = {cluster}")
+                    # print(group.loc[cluster].c_after_x)
+                    # print(np.sum(group.loc[cluster].c_after_x))
+                    # print(np.isnan(np.sum(group.loc[cluster].c_after_x)))
+                    if not np.isnan(np.sum(group.loc[cluster].c_before_x)) and not np.isnan(np.sum(group.loc[cluster].c_after_x)):
+                        before = [group.loc[cluster].c_before_x, group.loc[cluster].c_before_y]
+                        after = [group.loc[cluster].c_after_x, group.loc[cluster].c_after_y]
+                        compare_to = group.drop(index=cluster).dropna()
+                        # print(f"compare to = {compare_to}")
 
-                # calculate the smallest distance to any of the other centroids
-                min_distance_before = np.hypot((compare_to['centroid_before'][0] - before[0]),(compare_to['centroid_before'][1] - before[1])).min()
-                min_distance_after = np.hypot((compare_to['centroid_after'][0] - after[0]),(compare_to['centroid_after'][1] - after[1])).min()
 
+                        # calculate the smallest distance to any of the other centroids
+                        min_distance_before = np.nanmin(np.hypot((compare_to.c_before_x - before[0]),(compare_to.c_before_y - before[1])))
+                        min_distance_after = np.nanmin(np.hypot((compare_to.c_after_x - after[0]),(compare_to.c_after_y - after[1])))
+
+                        min_distance_before = Decimal(min_distance_before).quantize(Decimal('.01'), rounding=ROUND_HALF_EVEN)
+                        min_distance_after = Decimal(min_distance_after).quantize(Decimal('.01'), rounding=ROUND_HALF_EVEN)
+
+                        seperation_increase.append(1 if min_distance_before < min_distance_after else 0)
+                        seperation_decrease.append(1 if min_distance_before > min_distance_after else 0)
+                    else:
+                        seperation_increase.append(0)
+                        seperation_decrease.append(0)
+
+                return [seperation_increase, seperation_decrease]
+
+            else:
+                return [0, 0]
 
 
         # per group and per condition ...
 
         result = x.groupby(['g'])[['x','y']].apply(_check_per_group)
 
-        # result[['seperation_increased','seperation_decreased'] = result.apply(_check_seperation)
-        # result = result.sum()
+        result['seperation+'],result['seperation-'] = _check_seperation(result)
+        result.drop(['c_before_x', 'c_before_y','c_after_x','c_after_y','d_before','d_after'], axis=1, inplace=True)
+        result = result.sum()
 
 
         # if it occurered more than once in any group, just pen down 1 (thus the max of all of these become 80)
-        # result = result.transform(lambda x: (1 if x > 0 else 0))
+        result = result.transform(lambda x: (1 if x > 0 else 0))
 
         return result
 
@@ -203,22 +241,23 @@ def proximity_changes(frame: pd.DataFrame) -> None:
     frame.set_index(['physicalisation', 'participant', 'orientation', 'g', 'condition', 'cube'], inplace=True)
 
     # per trial...
-    conditions = frame.query('physicalisation == 2 and participant == 4 and orientation == "E"').groupby(['physicalisation', 'participant', 'orientation'])
-    # conditions = frame.groupby(['physicalisation', 'participant', 'orientation'])
+
+    # if specific, change query here
+    # conditions = frame.query('physicalisation == 5 and participant == 4 and orientation == "N"').groupby(['physicalisation', 'participant', 'orientation'])
+    conditions = frame.groupby(['physicalisation', 'participant', 'orientation'])
     clusters_change = conditions.progress_apply(_centroids_distances)
 
-    with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-        print(clusters_change)
-    # print(clusters_change.query('physicalisation == 2 and participant == 16 and orientation == "E"'))
-    # print(clusters_change.query('physicalisation == 2 and participant == 3 and orientation == "E"'))
-    # print(clusters_change.query('physicalisation == 2 and participant == 2 and orientation == "E"'))
-    # print(clusters_change.query('physicalisation == 2 and participant == 15 and orientation == "E"'))
-
+    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+         # print(clusters_change)
+    #
     per_participant = clusters_change.groupby(['physicalisation', 'participant']).sum()
     per_phys = clusters_change.groupby(['physicalisation']).sum()
 
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        print(per_participant)
+
     # save
-    # per_participant.to_csv(path_or_buf=helpers.create_output_folder('output') / f"cluster_cohesion_per_participant.csv", sep=';', header=True)
-    # per_phys.to_csv(path_or_buf=helpers.create_output_folder('output') / f"cluster_cohesion.csv", sep=';', header=True)
+    per_participant.to_csv(path_or_buf=helpers.create_output_folder('output') / f"cluster_coh&sep_per_participant_{name}.csv", sep=';', header=True)
+    per_phys.to_csv(path_or_buf=helpers.create_output_folder('output') / f"cluster_coh&sep_{name}.csv", sep=';', header=True)
 
     return per_phys
