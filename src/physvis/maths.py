@@ -53,6 +53,132 @@ def changes_total_cubes(frame: pd.DataFrame) -> None:
 
     return change_occurance_table
 
+def atomic_orientation_moved_occurance(frame: pd.DataFrame) -> None:
+    # count any number of orientation changes > 0 as 1 in a trial
+    return atomic_orientation_moved_summed(frame, flatten=True)
+
+def atomic_orientation_moved_summed(frame: pd.DataFrame, flatten=False) -> None:
+    """
+    Args:
+        frame: the data frame storing data to be rendered
+    Returns:
+        nothing
+    """
+
+    # method local to this method
+    def _chosen_cubes_to_change(x):
+        x = x.loc(axis=1)['o']  # drop other columns
+
+        resultframe = pd.DataFrame({
+            '0-1': {
+                'xy->z' : 1 if x.iloc[0] in ('x','y') and x.iloc[1] in ('z') else 0,
+                'z->xy' : 1 if x.iloc[0] in ('z') and x.iloc[1] in ('x','y') else 0,
+                'x<->y' : 1 if (x.iloc[0] in ('x') and x.iloc[1] in ('y')) or (x.iloc[0] in ('y') and x.iloc[1] in ('x')) else 0,
+            },
+            '1-2': {
+                'xy->z' : 1 if x.iloc[1] in ('x','y') and x.iloc[2] in ('z') else 0,
+                'z->xy' : 1 if x.iloc[1] in ('z') and x.iloc[2] in ('x','y') else 0,
+                'x<->y' : 1 if (x.iloc[1] in ('x') and x.iloc[2] in ('y')) or (x.iloc[1] in ('y') and x.iloc[2] in ('x')) else 0,
+            },
+            '0-2': {
+                'xy->z' : 1 if x.iloc[0] in ('x','y') and x.iloc[2] in ('z') else 0,
+                'z->xy' : 1 if x.iloc[0] in ('z') and x.iloc[2] in ('x','y') else 0,
+                'x<->y' : 1 if (x.iloc[0] in ('x') and x.iloc[2] in ('y')) or (x.iloc[0] in ('y') and x.iloc[2] in ('x')) else 0,
+            }
+
+        })
+        # give the subaxis a name
+        resultframe.rename_axis(index="type", columns="phase", inplace=True)
+        return resultframe
+
+    # columns look like: ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
+
+    # focus on each cube in each trial
+    conditions = frame.groupby(['physicalisation', 'participant', 'orientation', 'cube'])
+    # calculate if a cube was changed in the trial
+    cubes_changed = conditions.progress_apply(_chosen_cubes_to_change)
+    # sum orientation changes per trial (i.e. ignore cube IDs)
+
+
+    print(cubes_changed)
+    cubes_changed = cubes_changed.groupby(['physicalisation', 'participant','orientation','type']).sum()
+    cubes_changed = cubes_changed.stack()
+    print(cubes_changed)
+    if flatten:
+        cubes_changed = cubes_changed.apply(lambda x: np.min([1, x]))
+
+    # calculate averages of # of cubes changed per trial
+    per_participant = cubes_changed.groupby(['physicalisation', 'participant', 'type','phase']).sum().unstack(level=['type','phase'])
+    per_phys = cubes_changed.groupby(['physicalisation','type','phase']).sum().unstack(level=['type','phase'])
+
+    # add a total row
+    per_phys.loc["total"] = per_phys.sum(axis=0)
+
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        print(per_participant)
+
+    # save
+    name = "_summed"
+    if flatten:
+        name="_occurances"
+
+    per_participant.to_csv(path_or_buf=helpers.create_output_folder('output') / f"atomic_orientation_changed_per_participant{name}.csv", sep=';', header=True)
+    per_phys.to_csv(path_or_buf=helpers.create_output_folder('output') / f"atomic_orientation_changed{name}.csv", sep=';', header=True)
+
+    return per_phys
+
+def total_cubes_moved(frame: pd.DataFrame) -> None:
+    """
+    Args:
+        frame: the data frame storing data to be rendered
+    Returns:
+        nothing
+    """
+
+    # method local to this method
+    def _chosen_cubes_to_change(x):
+        x = x.loc(axis=1)['o','x','y']  # drop other columns
+
+        return pd.Series(
+            [1 if not x.iloc[0].equals(x.iloc[1]) else 0,
+             1 if not x.iloc[0].equals(x.iloc[2]) else 0,
+             1 if not x.iloc[1].equals(x.iloc[2]) else 0,
+             ],
+            index=[
+                '0-1',
+                '0-2',
+                '1-2'
+                ])
+
+
+    # columns look like: ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
+
+    # focus on each cube in each trial
+    conditions = frame.groupby(['physicalisation', 'participant', 'orientation', 'cube'])
+    # calculate if a cube was changed in the trial
+    cubes_changed = conditions.progress_apply(_chosen_cubes_to_change)
+    # sum cubes changed per trial
+    cubes_changed = cubes_changed.groupby(['physicalisation', 'participant','orientation']).sum()
+
+    # calculate averages of # of cubes changed per trial
+    per_participant = cubes_changed.groupby(['physicalisation', 'participant']).agg(['sum', 'mean', 'std'])
+    per_phys = cubes_changed.groupby(['physicalisation']).agg(['sum', 'mean', 'std'])
+
+    # add a total row
+    per_phys.loc["total"] = per_phys.sum(axis=0)
+
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        print(per_participant)
+
+    # save
+    per_participant.to_csv(path_or_buf=helpers.create_output_folder('output') / f"amount_cubes_changed_per_participant.csv", sep=';', header=True)
+    per_phys.to_csv(path_or_buf=helpers.create_output_folder('output') / f"amount_cubes_changed.csv", sep=';', header=True)
+
+    return per_phys
+
+
+
+
 
 def IDs_cubes_moved(frame: pd.DataFrame) -> None:
     """
@@ -172,13 +298,16 @@ def proximity_changes(frame: pd.DataFrame, phase: int = 2, name: str = 'phase2')
                  internal_decrease,
                  cluster_removed
                  ],
-                index=['c_before_x','c_before_y', 'c_after_x','c_after_y', 'd_before', 'd_after', 'cohesion-', 'cohesion+', 'gone'])
+                index=['c_before_x','c_before_y', 'c_after_x','c_after_y', 'd_before', 'd_after', 'coh-', 'coh+','gone'])
 
         def _check_seperation(group):
             # calculate whether separation was increased or decreased
             # for each centroid find closest neighbour and check if the distance was increased or decreased
             seperation_increase = []
             seperation_decrease = []
+            seperation_increase_only = []
+            seperation_decrease_only = []
+            seperation_both = []
             # assuming no duplicates exist
             # print(f"group = {group}")
 
@@ -188,22 +317,31 @@ def proximity_changes(frame: pd.DataFrame, phase: int = 2, name: str = 'phase2')
                     # print(group.loc[cluster].c_after_x)
                     # print(np.sum(group.loc[cluster].c_after_x))
                     # print(np.isnan(np.sum(group.loc[cluster].c_after_x)))
+
+                    # do not calculat different for a cluster that is removed - we just don't count that as a seperation+ or -
                     if not np.isnan(np.sum(group.loc[cluster].c_before_x)) and not np.isnan(np.sum(group.loc[cluster].c_after_x)):
                         before = [group.loc[cluster].c_before_x, group.loc[cluster].c_before_y]
                         after = [group.loc[cluster].c_after_x, group.loc[cluster].c_after_y]
-                        compare_to = group.drop(index=cluster).dropna()
-                        # print(f"compare to = {compare_to}")
 
+                        # remove the cluster we are going to compare from the equation
+                        compare_to = group.drop(index=cluster)
+
+                        # remove any NaN for the comparison
+                        compare_to_before = compare_to.drop(columns=['c_after_x', 'c_after_y']).dropna()
+                        compare_to_after = compare_to.drop(columns=['c_before_x', 'c_before_y']).dropna()
 
                         # calculate the smallest distance to any of the other centroids
-                        min_distance_before = np.nanmin(np.hypot((compare_to.c_before_x - before[0]),(compare_to.c_before_y - before[1])))
-                        min_distance_after = np.nanmin(np.hypot((compare_to.c_after_x - after[0]),(compare_to.c_after_y - after[1])))
+                        # min() on a series throws NaN if an NaN is present, but we should have removed these in the above code
+                        min_distance_before = np.hypot((compare_to_before.c_before_x - before[0]),(compare_to_before.c_before_y - before[1])).min()
+                        min_distance_after = np.hypot((compare_to_after.c_after_x - after[0]),(compare_to_after.c_after_y - after[1])).min()
 
                         min_distance_before = Decimal(min_distance_before).quantize(Decimal('.01'), rounding=ROUND_HALF_EVEN)
                         min_distance_after = Decimal(min_distance_after).quantize(Decimal('.01'), rounding=ROUND_HALF_EVEN)
 
-                        seperation_increase.append(1 if min_distance_before < min_distance_after else 0)
-                        seperation_decrease.append(1 if min_distance_before > min_distance_after else 0)
+                        increase = 1 if min_distance_before < min_distance_after else 0
+                        decrease = 1 if min_distance_before > min_distance_after else 0
+                        seperation_increase.append(increase)
+                        seperation_decrease.append(decrease)
                     else:
                         seperation_increase.append(0)
                         seperation_decrease.append(0)
@@ -213,18 +351,32 @@ def proximity_changes(frame: pd.DataFrame, phase: int = 2, name: str = 'phase2')
             else:
                 return [0, 0]
 
+        def _check_combos(x):
+            x['coh-only'] =  1 if x['coh-'] == 1 and x['coh+'] == 0 else 0
+            x['coh+only'] =  1 if x['coh-'] == 0 and x['coh+'] == 1 else 0
+            x['coh-+both'] = 1 if x['coh-'] == 1 and x['coh+'] == 1 else 0
+            x['sep-only'] =  1 if x['sep-'] == 1 and x['sep+'] == 0 else 0
+            x['sep+only'] =  1 if x['sep-'] == 0 and x['sep+'] == 1 else 0
+            x['sep-+both'] = 1 if x['sep-'] == 1 and x['sep+'] == 1 else 0
+            x['coh+&sep+'] = 1 if x['coh+'] == 1 and x['sep+'] == 1 else 0
+            x['coh+&no_sep+'] = 1 if x['coh+'] == 1 and x['sep+'] == 0 else 0
+            x['sep+&no_coh+'] = 1 if x['coh+'] == 0 and x['sep+'] == 1 else 0
+
+            return x
+
 
         # per group and per condition ...
 
         result = x.groupby(['g'])[['x','y']].apply(_check_per_group)
 
-        result['seperation+'],result['seperation-'] = _check_seperation(result)
+        result['sep+'],result['sep-'] = _check_seperation(result)
         result.drop(['c_before_x', 'c_before_y','c_after_x','c_after_y','d_before','d_after'], axis=1, inplace=True)
         result = result.sum()
 
-
         # if it occurered more than once in any group, just pen down 1 (thus the max of all of these become 80)
         result = result.transform(lambda x: (1 if x > 0 else 0))
+        # check fr combinations of coh and sep
+        result = _check_combos(result)
 
         return result
 
@@ -249,9 +401,12 @@ def proximity_changes(frame: pd.DataFrame, phase: int = 2, name: str = 'phase2')
 
     # with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
          # print(clusters_change)
-    #
+
     per_participant = clusters_change.groupby(['physicalisation', 'participant']).sum()
     per_phys = clusters_change.groupby(['physicalisation']).sum()
+
+    # add a total row
+    per_phys.loc["total"] = per_phys.sum(axis=0)
 
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
         print(per_participant)
