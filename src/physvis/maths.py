@@ -99,11 +99,9 @@ def atomic_orientation_moved_summed(frame: pd.DataFrame, flatten=False) -> None:
     cubes_changed = conditions.progress_apply(_chosen_cubes_to_change)
     # sum orientation changes per trial (i.e. ignore cube IDs)
 
-
-    print(cubes_changed)
     cubes_changed = cubes_changed.groupby(['physicalisation', 'participant','orientation','type']).sum()
     cubes_changed = cubes_changed.stack()
-    print(cubes_changed)
+
     if flatten:
         cubes_changed = cubes_changed.apply(lambda x: np.min([1, x]))
 
@@ -127,7 +125,11 @@ def atomic_orientation_moved_summed(frame: pd.DataFrame, flatten=False) -> None:
 
     return per_phys
 
-def total_cubes_moved(frame: pd.DataFrame) -> None:
+def total_cubes_moved_occurance(frame: pd.DataFrame) -> None:
+    # count any number of orientation changes > 0 as 1 in a trial
+    return total_cubes_moved(frame, flatten=True)
+
+def total_cubes_moved(frame: pd.DataFrame, flatten=False) -> None:
     """
     Args:
         frame: the data frame storing data to be rendered
@@ -138,18 +140,30 @@ def total_cubes_moved(frame: pd.DataFrame) -> None:
     # method local to this method
     def _chosen_cubes_to_change(x):
         x = x.loc(axis=1)['o','x','y']  # drop other columns
+        yx = x.loc(axis=1)['x','y']  # drop other columns
 
-        return pd.Series(
-            [1 if not x.iloc[0].equals(x.iloc[1]) else 0,
-             1 if not x.iloc[0].equals(x.iloc[2]) else 0,
-             1 if not x.iloc[1].equals(x.iloc[2]) else 0,
-             ],
-            index=[
-                '0-1',
-                '0-2',
-                '1-2'
-                ])
+        resultframe = pd.DataFrame({
+            '0-1': {
+                'total' :    1 if not x.iloc[0].equals(x.iloc[1]) else 0,
+                'a_orient' : 1 if not x.iloc[0].o == x.iloc[1].o else 0,
+                'prox' :     1 if not yx.iloc[0].equals(yx.iloc[1]) else 0,
+            },
+            '1-2': {
+                'total' :    1 if not x.iloc[1].equals(x.iloc[2]) else 0,
+                'a_orient' : 1 if not x.iloc[1].o == (x.iloc[2].o) else 0,
+                'prox' :     1 if not yx.iloc[1].equals(yx.iloc[2]) else 0,
+            },
+            '0-2': {
+                'total' :    1 if not x.iloc[0].equals(x.iloc[2]) else 0,
+                'a_orient' : 1 if not x.iloc[0].o == (x.iloc[2].o) else 0,
+                'prox' :    1 if not yx.iloc[0].equals(yx.iloc[2]) else 0,
+            },
 
+
+        })
+        # give the subaxis a name
+        resultframe.rename_axis(index="type", columns="phase", inplace=True)
+        return resultframe
 
     # columns look like: ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
 
@@ -157,12 +171,19 @@ def total_cubes_moved(frame: pd.DataFrame) -> None:
     conditions = frame.groupby(['physicalisation', 'participant', 'orientation', 'cube'])
     # calculate if a cube was changed in the trial
     cubes_changed = conditions.progress_apply(_chosen_cubes_to_change)
-    # sum cubes changed per trial
-    cubes_changed = cubes_changed.groupby(['physicalisation', 'participant','orientation']).sum()
+
+    # sum orientation changes per trial (i.e. ignore cube IDs)
+
+    cubes_changed = cubes_changed.groupby(['physicalisation', 'participant','orientation','type']).sum()
+    cubes_changed = cubes_changed.stack()
+
+    if flatten:
+        cubes_changed = cubes_changed.apply(lambda x: np.min([1, x]))
 
     # calculate averages of # of cubes changed per trial
-    per_participant = cubes_changed.groupby(['physicalisation', 'participant']).agg(['sum', 'mean', 'std'])
-    per_phys = cubes_changed.groupby(['physicalisation']).agg(['sum', 'mean', 'std'])
+    per_participant = cubes_changed.groupby(['physicalisation', 'participant', 'type','phase']).sum().unstack(level=['type','phase'])
+    per_phys = cubes_changed.groupby(['physicalisation','type','phase']).sum().unstack(level=['type','phase'])
+
 
     # add a total row
     per_phys.loc["total"] = per_phys.sum(axis=0)
@@ -171,13 +192,15 @@ def total_cubes_moved(frame: pd.DataFrame) -> None:
         print(per_participant)
 
     # save
-    per_participant.to_csv(path_or_buf=helpers.create_output_folder('output') / f"amount_cubes_changed_per_participant.csv", sep=';', header=True)
-    per_phys.to_csv(path_or_buf=helpers.create_output_folder('output') / f"amount_cubes_changed.csv", sep=';', header=True)
+    name = "_summed"
+    if flatten:
+        name="_occurances"
+
+    # save
+    per_participant.to_csv(path_or_buf=helpers.create_output_folder('output') / f"amount_cubes_changed__with_type_per_participant{name}.csv", sep=';', header=True)
+    per_phys.to_csv(path_or_buf=helpers.create_output_folder('output') / f"amount_cubes_changed_with_type{name}.csv", sep=';', header=True)
 
     return per_phys
-
-
-
 
 
 def IDs_cubes_moved(frame: pd.DataFrame) -> None:
