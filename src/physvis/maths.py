@@ -408,7 +408,6 @@ def proximity_changes(frame: pd.DataFrame, phase: int = 2, name: str = 'phase2')
     # columns look like: ['participant','physicalisation','orientation','condition','cube', 'h', 'o', 'g', 'x', 'y']
 
     # convert to numbers where possible
-    frame = frame.apply(pd.to_numeric, errors='ignore')
     print(frame.info())
 
     # reset index, we need a different angle, we want to check the cubes, per condition,

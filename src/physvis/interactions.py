@@ -8,6 +8,123 @@ import plotly.graph_objects as plot
 from . import helpers
 
 
+
+def printvis(frame: pd.DataFrame, tasks: list) -> None:
+    """save 3D renderings of Data series
+    Args:
+        frame: the data frame storing data to be rendered
+    Returns:
+        nothing
+    """
+
+    print("Generating visuals for")
+
+    for task in tasks:
+
+        # get the specific index from the dataframe
+        query = f"physicalisation == {task['phys']} and participant == {task['part']} and orientation == '{task['view']}'"
+        print(' - '+ query)
+        target = frame.query(query).drop(1, level='condition')
+
+        max_group = int(target['g'].max())
+
+        # eight x, y, and z coordinates form a cube
+        # reference: https://plotly.com/python/reference/isosurface/
+
+
+
+        fig= plot.Figure(
+            layout_title_text=""
+        )
+
+        # numbers hovering over cubes
+        annotations = []
+
+        for condition, all_cubes in target.groupby('condition'):
+
+            for row in all_cubes.itertuples():
+                c = {
+                    # coordinates
+                    'x' : row.x,
+                    'y' : row.y,
+                    'z' : 1,
+                    # half widths
+                    'wx' : .45,
+                    'wy' : .45,
+                    # heigth
+                    'wz' : .9,
+                }
+                # overrule widths based on orientation
+                # note that a orientation in y, adds width to the 'x' direction - and vise versa
+                c['w' + row.o] = row.h / (1 if row.o == 'z' else 2)
+
+                fig.add_trace(
+                    plot.Isosurface(
+                        x=[c['x']-c['wy'], c['x']-c['wy'], c['x']-c['wy'], c['x']-c['wy'], c['x']+c['wy'], c['x']+c['wy'], c['x']+c['wy'], c['x']+c['wy']],
+                        y=[c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx']],
+                        z=[c['wz'],     c['wz'],     0,        0,        c['wz'],     c['wz'],     0,        0],
+                        value=[row.g]*8,
+                        hoverinfo="none",
+                        showscale=False,
+                        opacity=(.2 if condition == 0 else 1),
+                        contour=dict(
+                            show=True
+                            ),
+                        isomin=0,       # remove the 'dark blue' harder to see
+                        isomax=5,
+                        colorscale="Rainbow"
+                        ),
+                )
+
+
+                # annotations.append(dict(
+                #     x=c['x'],
+                #     y=c['y'],
+                #     z=c['wz'] + .5,
+                #     text=str(row.Index),
+                #     showarrow=False,
+                #     bgcolor="rgba(255,255,255,.7)",
+                #     font=dict(
+                #         color="black",
+                #         size=12
+                #     ),
+                #     )
+                # )
+
+        fig.update_layout(
+            scene_aspectmode='cube',
+            scene = dict(
+                xaxis = dict(nticks=40, range=[0,20],showbackground=False, visible=False),
+                yaxis = dict(nticks=40, range=[0,20],showbackground=False, visible=False),
+                zaxis = dict(
+                    showticklabels=False,
+                    showaxeslabels=False,
+                    nticks=4,
+                    range=[0,20],
+                    backgroundcolor="rgb(240,240,240)",
+                    title = dict(text=""),
+                    ),
+                # xaxis_title='X AXIS TITLE',
+                # yaxis_title='Y AXIS TITLE',
+                # zaxis_title='Z AXIS TITLE',
+                # annotations = annotations,
+                camera = dict(
+                    up=dict(x=0, y=0, z=1),
+                    center=dict(x=-.4, y=-.4, z=-.7),
+                    eye=dict(x=.7, y=.6, z=-.1),
+                    # projection = dict(
+                    #     type="orthographic"
+                    # )
+                )
+            ),
+        )
+
+        # fig.write_html(f"output/{situation}.html")
+        # fig.show()
+        fig.write_image(f"images/{query}.jpeg", width=600, height=400, scale=10)
+
+
+
 def display(frame: pd.DataFrame, participant: str, condition: str, orientation: str, physicalisation: str) -> None:
     """Create 3D renderings of Data series
     Args:

@@ -54,6 +54,30 @@ def vis(input: str, delimiter: str) -> None:
     click.echo(f"\nTill next time!\n")
 
 
+
+@click.command()
+@click.option("--delimiter", "-d", default=";", help="Delimiter used in your csv files. Default is ';'")
+@click.option("--input", "-i", default="output/combined.csv", help="The location of the large .csv file compiled by collect(). Default is 'output/combined.csv'")
+def print(input: str, delimiter: str) -> None:
+    click.echo(f"Press 'control+c' to abort this program at any point.\n")
+
+    frame = helpers.get_large_csv(input, delimiter)
+
+    to_print = [
+        {'phys': 1, 'part': 10, 'view': 'N', 'cond': [0,2] },
+        {'phys': 3, 'part': 12, 'view': 'N', 'cond': [0,2] },
+        {'phys': 1, 'part': 1, 'view': 'N', 'cond': [0,2] },
+        {'phys': 5, 'part': 1, 'view': 'N', 'cond': [0,2] },
+        {'phys': 6, 'part': 15, 'view': 'N', 'cond': [0,2] },
+        {'phys': 2, 'part': 4, 'view': 'E', 'cond': [0,2] },
+
+    ]
+
+    interactions.printvis(frame=frame, tasks=to_print)
+
+    click.echo(f"\nTill next time!\n")
+
+
 @click.command()
 @click.option("--delimiter", "-d", default=";", help="Delimiter used in your csv files. Default is ';'")
 @click.option("--input", "-i", default="input", help="The input location of the .csv files. Default is 'input'")

@@ -24,4 +24,5 @@ def get_large_csv(input_path: str, delimiter: str = ";") -> pd.DataFrame:
     """
     frame = pd.read_csv(input_path, index_col=naming_columns[:5], header=0, delimiter=delimiter, keep_default_na=False)
     frame.sort_index()
+    frame = frame.apply(pd.to_numeric, errors='ignore')
     return frame
