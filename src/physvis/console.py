@@ -54,6 +54,38 @@ def vis(input: str, delimiter: str) -> None:
     click.echo(f"\nTill next time!\n")
 
 
+@click.command()
+@click.option("--delimiter", "-d", default=";", help="Delimiter used in your csv files. Default is ';'")
+@click.option("--input", "-i", default="output/combined.csv", help="The location of the large .csv file compiled by collect(). Default is 'output/combined.csv'")
+def printheat(input: str, delimiter: str) -> None:
+    click.echo(f"Press 'control+c' to abort this program at any point.\n")
+
+    frame = helpers.get_large_csv(input, delimiter)
+    data = [
+        helpers.get_heatmap_csv("output/IDs_changed_0-1.csv", delimiter = delimiter),
+        helpers.get_heatmap_csv("output/IDs_changed_0-2.csv", delimiter = delimiter),
+        ]
+    to_print = [
+        {'phys': 1, 'part': 1, 'view': 'N', 'cond': [0], 'data': 1 },
+        {'phys': 2, 'part': 1, 'view': 'N', 'cond': [0], 'data': 1 },
+        {'phys': 3, 'part': 1, 'view': 'N', 'cond': [0], 'data': 1 },
+        {'phys': 4, 'part': 1, 'view': 'N', 'cond': [0], 'data': 1 },
+        {'phys': 5, 'part': 1, 'view': 'N', 'cond': [0], 'data': 1 },
+        {'phys': 6, 'part': 1, 'view': 'N', 'cond': [0], 'data': 1 },
+
+        {'phys': 1, 'part': 1, 'view': 'N', 'cond': [0], 'data': 2 },
+        {'phys': 2, 'part': 1, 'view': 'N', 'cond': [0], 'data': 2 },
+        {'phys': 3, 'part': 1, 'view': 'N', 'cond': [0], 'data': 2 },
+        {'phys': 4, 'part': 1, 'view': 'N', 'cond': [0], 'data': 2 },
+        {'phys': 5, 'part': 1, 'view': 'N', 'cond': [0], 'data': 2 },
+        {'phys': 6, 'part': 1, 'view': 'N', 'cond': [0], 'data': 2 },
+    ]
+
+
+    interactions.printvis(frame=frame, tasks=to_print, data=data)
+
+    click.echo(f"\nTill next time!\n")
+
 
 @click.command()
 @click.option("--delimiter", "-d", default=";", help="Delimiter used in your csv files. Default is ';'")
@@ -64,12 +96,50 @@ def print(input: str, delimiter: str) -> None:
     frame = helpers.get_large_csv(input, delimiter)
 
     to_print = [
-        {'phys': 1, 'part': 10, 'view': 'N', 'cond': [0,2] },
-        {'phys': 3, 'part': 12, 'view': 'N', 'cond': [0,2] },
-        {'phys': 1, 'part': 1, 'view': 'N', 'cond': [0,2] },
-        {'phys': 5, 'part': 1, 'view': 'N', 'cond': [0,2] },
-        {'phys': 6, 'part': 15, 'view': 'N', 'cond': [0,2] },
+        {'phys': 1, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
+        {'phys': 2, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
+        {'phys': 3, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
+        {'phys': 4, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
+        {'phys': 5, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
+        {'phys': 6, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
+
+        {'phys': 1, 'part': 8, 'view': 'N', 'cond': [0,2] },
+        {'phys': 1, 'part': 11, 'view': 'N', 'cond': [0,2] },
+        {'phys': 1, 'part': 16, 'view': 'N', 'cond': [0,2] },
+        {'phys': 1, 'part': 4, 'view': 'E', 'cond': [0,2] },
+        {'phys': 1, 'part': 19, 'view': 'N', 'cond': [0,1] },
+        {'phys': 1, 'part': 19, 'view': 'N', 'cond': [0,2] },
+
+        {'phys': 2, 'part': 2, 'view': 'N', 'cond': [0,2] },
+        {'phys': 2, 'part': 13, 'view': 'S', 'cond': [0,1] },
+        {'phys': 2, 'part': 7, 'view': 'N', 'cond': [0,2] },
+        {'phys': 2, 'part': 15, 'view': 'S', 'cond': [0,2] },
         {'phys': 2, 'part': 4, 'view': 'E', 'cond': [0,2] },
+
+        {'phys': 3, 'part': 14, 'view': 'E', 'cond': [0,1] },
+        {'phys': 3, 'part': 14, 'view': 'E', 'cond': [0,2] },
+        {'phys': 3, 'part': 1, 'view': 'N', 'cond': [0,2] },
+        {'phys': 3, 'part': 7, 'view': 'E', 'cond': [0,2] },
+        {'phys': 3, 'part': 8, 'view': 'E', 'cond': [0,2] },
+        {'phys': 3, 'part': 12, 'view': 'N', 'cond': [0,1] },
+        {'phys': 3, 'part': 12, 'view': 'N', 'cond': [0,2] },
+
+        {'phys': 4, 'part': 5, 'view': 'N', 'cond': [0,1] },
+        {'phys': 4, 'part': 16, 'view': 'S', 'cond': [0,1] },
+        {'phys': 4, 'part': 3, 'view': 'N', 'cond': [0,1] },
+        {'phys': 4, 'part': 6, 'view': 'N', 'cond': [0,1] },
+        {'phys': 4, 'part': 10, 'view': 'N', 'cond': [0,1] },
+        {'phys': 4, 'part': 17, 'view': 'N', 'cond': [0,2] },
+
+        {'phys': 5, 'part': 8, 'view': 'N', 'cond': [0,1] },
+        {'phys': 5, 'part': 8, 'view': 'N', 'cond': [0,2] },
+        {'phys': 5, 'part': 14, 'view': 'N', 'cond': [0,2] },
+        {'phys': 5, 'part': 6, 'view': 'E', 'cond': [0,2] },
+
+        {'phys': 6, 'part': 5, 'view': 'N', 'cond': [0,1] },
+        {'phys': 6, 'part': 15, 'view': 'N', 'cond': [0,1] },
+        {'phys': 6, 'part': 15, 'view': 'N', 'cond': [0,2] },
+        {'phys': 6, 'part': 11, 'view': 'N', 'cond': [0,1] },
 
     ]
 

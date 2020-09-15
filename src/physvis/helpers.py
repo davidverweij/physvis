@@ -15,14 +15,25 @@ def create_output_folder(output_path: str) -> Path:
         path.mkdir(parents=True, exist_ok=True)
     return path
 
-def get_large_csv(input_path: str, delimiter: str = ";") -> pd.DataFrame:
+def get_large_csv(input_path: str, delimiter: str = ";", index_col: list = naming_columns[:5]) -> pd.DataFrame:
     """Get the large .csv as a DataFrame (must have created it first using collect())
     Args:
         path: the path from user in any format (relative, absolute, etc.)
     Returns:
         A pandas dataframe
     """
-    frame = pd.read_csv(input_path, index_col=naming_columns[:5], header=0, delimiter=delimiter, keep_default_na=False)
+    frame = pd.read_csv(input_path, index_col=index_col, header=0, delimiter=delimiter, keep_default_na=False)
     frame.sort_index()
+    frame = frame.apply(pd.to_numeric, errors='ignore')
+    return frame
+
+def get_heatmap_csv(input_path: str, delimiter: str = ";", index_col: list = ['physicalisation']) -> pd.DataFrame:
+    """Get the large .csv as a DataFrame (must have created it first using collect())
+    Args:
+        path: the path from user in any format (relative, absolute, etc.)
+    Returns:
+        A pandas dataframe
+    """
+    frame = pd.read_csv(input_path, index_col=index_col, header=0, delimiter=delimiter)
     frame = frame.apply(pd.to_numeric, errors='ignore')
     return frame

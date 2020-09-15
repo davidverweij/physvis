@@ -23,6 +23,7 @@ vis = "physvis.console:vis"
 collect = "physvis.console:collect"
 calc = "physvis.console:calc"
 print = "physvis.console:print"
+heatmap = "physvis.console:printheat"
 
 [build-system]
 requires = ["poetry>=0.12"]

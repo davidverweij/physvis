@@ -9,7 +9,7 @@ from . import helpers
 
 
 
-def printvis(frame: pd.DataFrame, tasks: list) -> None:
+def printvis(frame: pd.DataFrame, tasks: list, data:list = None) -> None:
     """save 3D renderings of Data series
     Args:
         frame: the data frame storing data to be rendered
@@ -19,14 +19,41 @@ def printvis(frame: pd.DataFrame, tasks: list) -> None:
 
     print("Generating visuals for")
 
+    # colors = ['Greys','YlGnBu','Greens','YlOrRd','Bluered','RdBu','Reds','Blues','Picnic','Rainbow','Portland','Jet','Hot','Blackbody','Earth','Electric','Viridis','Cividis']
+    # angles = [[17,15],[15,-17],[-17,-15],[-15,17]]
+    # angles = [[17,15]]
+
+    phys_angles = {
+        1: [15,  -17],
+        2: [15, -17],
+        3: [17,   15],
+        4: [17,   15],
+        5: [-15, 17],
+        6: [-15, 17]
+    }
+
+    colorscale = [
+        [0, 'rgb(29,123,180)'],
+        [.33, 'rgb(57,177,135)'],
+        [.66, 'rgb(241,206,28)'],
+        [1, 'rgb(238,116,73)']
+    ]
+
+    datacolorscale = 'Reds'
+
     for task in tasks:
 
         # get the specific index from the dataframe
         query = f"physicalisation == {task['phys']} and participant == {task['part']} and orientation == '{task['view']}'"
         print(' - '+ query)
-        target = frame.query(query).drop(1, level='condition')
+
+        # conditions
+        remove_cond = [x for x in [0,1,2] if x not in task['cond']]
+
+        target = frame.query(query).drop(remove_cond, level='condition')
 
         max_group = int(target['g'].max())
+        camera = phys_angles[task['phys']]
 
         # eight x, y, and z coordinates form a cube
         # reference: https://plotly.com/python/reference/isosurface/
@@ -38,11 +65,20 @@ def printvis(frame: pd.DataFrame, tasks: list) -> None:
         )
 
         # numbers hovering over cubes
-        annotations = []
+        total_cond = len(task['cond'])
+        count = 0
 
         for condition, all_cubes in target.groupby('condition'):
+            count += 1
+            annotations = []
+
+            if 'data' in task:
+                max_value = data[task['data']-1].loc[task['phys']].max();
 
             for row in all_cubes.itertuples():
+                cubeID = row.Index[-1]
+                if 'data' in task:
+                    cubevalue = data[task['data']-1].loc[task['phys']][int(cubeID)-1]
                 c = {
                     # coordinates
                     'x' : row.x,
@@ -62,66 +98,109 @@ def printvis(frame: pd.DataFrame, tasks: list) -> None:
                     plot.Isosurface(
                         x=[c['x']-c['wy'], c['x']-c['wy'], c['x']-c['wy'], c['x']-c['wy'], c['x']+c['wy'], c['x']+c['wy'], c['x']+c['wy'], c['x']+c['wy']],
                         y=[c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx']],
-                        z=[c['wz'],     c['wz'],     0,        0,        c['wz'],     c['wz'],     0,        0],
-                        value=[row.g]*8,
+                        z=[c['wz'],        c['wz'],        0,              0,              c['wz'],        c['wz'],        0,               0],
+                        value=[0 if 'baseline' in task
+                               else (cubevalue if 'data' in task else row.g-1)
+                               ]*8,
                         hoverinfo="none",
                         showscale=False,
-                        opacity=(.2 if condition == 0 else 1),
+                        opacity=(.2 if count < total_cond else 1),
                         contour=dict(
                             show=True
                             ),
                         isomin=0,       # remove the 'dark blue' harder to see
-                        isomax=5,
-                        colorscale="Rainbow"
+                        isomax=3 if not 'data' in task else max_value,
+                        colorscale=datacolorscale if 'data' in task else colorscale,
+                        lighting = dict(
+                            diffuse=.9,
+                            ambient=.5,
+                        ),
+                        surface=dict(count=3, fill=0.7, pattern='odd'),
                         ),
                 )
 
-
-                # annotations.append(dict(
-                #     x=c['x'],
-                #     y=c['y'],
-                #     z=c['wz'] + .5,
-                #     text=str(row.Index),
-                #     showarrow=False,
-                #     bgcolor="rgba(255,255,255,.7)",
-                #     font=dict(
-                #         color="black",
-                #         size=12
-                #     ),
-                #     )
-                # )
+                if 'data' in task:
+                    annotations.append(dict(
+                        x=c['x'],
+                        y=c['y'],
+                        z=c['wz'] + .5,
+                        text=str(cubevalue),
+                        showarrow=False,
+                        bgcolor="rgba(255,255,255,.7)",
+                        font=dict(
+                            color="black",
+                            size=12
+                        ),
+                        )
+                    )
 
         fig.update_layout(
-            scene_aspectmode='cube',
+            margin=dict(l=0, r=0, t=0, b=0),
+
             scene = dict(
-                xaxis = dict(nticks=40, range=[0,20],showbackground=False, visible=False),
-                yaxis = dict(nticks=40, range=[0,20],showbackground=False, visible=False),
+                aspectratio=dict(
+                 x=20,
+                 y=20,
+                 z=5,
+                ),
+                xaxis = dict(
+                    showticklabels=False,
+                    # showaxeslabels=False,
+                    nticks=40,
+                    range=[0,20],
+                    showbackground=False,
+                    visible=True,
+                    title = dict(text=""),
+                    ),
+                yaxis = dict(
+                    showticklabels=False,
+                    # showaxeslabels=False,
+                    nticks=40,
+                    range=[0,20],
+                    showbackground=False,
+                    visible=True,
+                    title = dict(text=""),
+                    ),
                 zaxis = dict(
                     showticklabels=False,
                     showaxeslabels=False,
-                    nticks=4,
-                    range=[0,20],
-                    backgroundcolor="rgb(240,240,240)",
+                    nticks=5,
+                    range=[0,5],
+                    backgroundcolor="rgb(245,245,245)",
                     title = dict(text=""),
                     ),
-                # xaxis_title='X AXIS TITLE',
-                # yaxis_title='Y AXIS TITLE',
-                # zaxis_title='Z AXIS TITLE',
-                # annotations = annotations,
+                annotations = annotations,
                 camera = dict(
                     up=dict(x=0, y=0, z=1),
-                    center=dict(x=-.4, y=-.4, z=-.7),
-                    eye=dict(x=.7, y=.6, z=-.1),
+                    # center=dict(x=-.4, y=-.4, z=-.7),
+                    # eye=dict(x=.7, y=.6, z=-.1),
+
+                    # This one worked well for non orthographic!
+                    # center=dict(x=3, y=2, z=0),
+                    # eye=dict(x=13, y=10, z=10),
+
+                    #  with perspective
+                    center=dict(x=0, y=0, z=-5),
+                    eye=dict(x=camera[0], y=camera[1], z=16),
+
+                    # orthographic
                     # projection = dict(
                     #     type="orthographic"
-                    # )
+                    # ),
+                    # center=dict(x=3, y=2, z=0),
+                    # eye=dict(x=35, y=30, z=30),
                 )
             ),
         )
 
-        # fig.write_html(f"output/{situation}.html")
+
         # fig.show()
-        fig.write_image(f"images/{query}.jpeg", width=600, height=400, scale=10)
+        if 'baseline' in task:
+            fig.write_image(f"images/BASELINE physicalisation == {task['phys']}.jpg", width=600, height=400, scale=5)
+        elif 'data' in task:
+            fig.write_image(f"images/HEATMAP physicalisation == {task['phys']} and conditiond == 0-{task['data']}.jpg", width=600, height=400, scale=5)
+        else:
+            fig.write_image(f"images/{query} and conditions == {task['cond']}.jpg", width=600, height=400, scale=5)
 
 
 
