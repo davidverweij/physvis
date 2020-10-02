@@ -53,9 +53,11 @@ def changes_total_cubes(frame: pd.DataFrame) -> None:
 
     return change_occurance_table
 
+
 def atomic_orientation_moved_occurance(frame: pd.DataFrame) -> None:
     # count any number of orientation changes > 0 as 1 in a trial
     return atomic_orientation_moved_summed(frame, flatten=True)
+
 
 def atomic_orientation_moved_summed(frame: pd.DataFrame, flatten=False) -> None:
     """
@@ -125,9 +127,11 @@ def atomic_orientation_moved_summed(frame: pd.DataFrame, flatten=False) -> None:
 
     return per_phys
 
+
 def total_cubes_moved_occurance(frame: pd.DataFrame) -> None:
     # count any number of orientation changes > 0 as 1 in a trial
     return total_cubes_moved(frame, flatten=True)
+
 
 def total_cubes_moved(frame: pd.DataFrame, flatten=False) -> None:
     """
@@ -251,8 +255,10 @@ def IDs_cubes_moved(frame: pd.DataFrame) -> None:
 
     # plotting a grouped AND stacked bar chart: https://stackoverflow.com/questions/45055661/combine-grouped-and-stacked-bar-graph-in-r
 
+
 def proximity_changes_phase1(frame: pd.DataFrame) -> None:
     return proximity_changes(frame, phase = 1, name='phase1')
+
 
 def proximity_changes(frame: pd.DataFrame, phase: int = 2, name: str = 'phase2') -> None:
     """

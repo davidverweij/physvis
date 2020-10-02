@@ -96,50 +96,86 @@ def print(input: str, delimiter: str) -> None:
     frame = helpers.get_large_csv(input, delimiter)
 
     to_print = [
-        {'phys': 1, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
-        {'phys': 2, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
-        {'phys': 3, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
-        {'phys': 4, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
-        {'phys': 5, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
-        {'phys': 6, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
-
-        {'phys': 1, 'part': 8, 'view': 'N', 'cond': [0,2] },
-        {'phys': 1, 'part': 11, 'view': 'N', 'cond': [0,2] },
-        {'phys': 1, 'part': 16, 'view': 'N', 'cond': [0,2] },
-        {'phys': 1, 'part': 4, 'view': 'E', 'cond': [0,2] },
-        {'phys': 1, 'part': 19, 'view': 'N', 'cond': [0,1] },
-        {'phys': 1, 'part': 19, 'view': 'N', 'cond': [0,2] },
-
-        {'phys': 2, 'part': 2, 'view': 'N', 'cond': [0,2] },
-        {'phys': 2, 'part': 13, 'view': 'S', 'cond': [0,1] },
-        {'phys': 2, 'part': 7, 'view': 'N', 'cond': [0,2] },
-        {'phys': 2, 'part': 15, 'view': 'S', 'cond': [0,2] },
-        {'phys': 2, 'part': 4, 'view': 'E', 'cond': [0,2] },
-
-        {'phys': 3, 'part': 14, 'view': 'E', 'cond': [0,1] },
-        {'phys': 3, 'part': 14, 'view': 'E', 'cond': [0,2] },
-        {'phys': 3, 'part': 1, 'view': 'N', 'cond': [0,2] },
-        {'phys': 3, 'part': 7, 'view': 'E', 'cond': [0,2] },
-        {'phys': 3, 'part': 8, 'view': 'E', 'cond': [0,2] },
-        {'phys': 3, 'part': 12, 'view': 'N', 'cond': [0,1] },
-        {'phys': 3, 'part': 12, 'view': 'N', 'cond': [0,2] },
-
-        {'phys': 4, 'part': 5, 'view': 'N', 'cond': [0,1] },
-        {'phys': 4, 'part': 16, 'view': 'S', 'cond': [0,1] },
-        {'phys': 4, 'part': 3, 'view': 'N', 'cond': [0,1] },
-        {'phys': 4, 'part': 6, 'view': 'N', 'cond': [0,1] },
-        {'phys': 4, 'part': 10, 'view': 'N', 'cond': [0,1] },
-        {'phys': 4, 'part': 17, 'view': 'N', 'cond': [0,2] },
-
-        {'phys': 5, 'part': 8, 'view': 'N', 'cond': [0,1] },
-        {'phys': 5, 'part': 8, 'view': 'N', 'cond': [0,2] },
-        {'phys': 5, 'part': 14, 'view': 'N', 'cond': [0,2] },
-        {'phys': 5, 'part': 6, 'view': 'E', 'cond': [0,2] },
-
-        {'phys': 6, 'part': 5, 'view': 'N', 'cond': [0,1] },
-        {'phys': 6, 'part': 15, 'view': 'N', 'cond': [0,1] },
-        {'phys': 6, 'part': 15, 'view': 'N', 'cond': [0,2] },
-        {'phys': 6, 'part': 11, 'view': 'N', 'cond': [0,1] },
+        # {'phys': 1, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
+        # {'phys': 2, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
+        # {'phys': 3, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
+        # {'phys': 4, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
+        # {'phys': 5, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
+        # {'phys': 6, 'part': 1, 'view': 'N', 'cond': [0], 'baseline': True },
+        #
+        # {'phys': 1, 'part': 1, 'view': 'N', 'cond': [0] },
+        # {'phys': 1, 'part': 8, 'view': 'N', 'cond': [0] },
+        # {'phys': 1, 'part': 16, 'view': 'N', 'cond': [0] },
+        # {'phys': 1, 'part': 8, 'view': 'N', 'cond': [0,2] },
+        # {'phys': 1, 'part': 8, 'view': 'E', 'cond': [0,2] },
+        # {'phys': 1, 'part': 8, 'view': 'S', 'cond': [0,2] },
+        # {'phys': 1, 'part': 8, 'view': 'W', 'cond': [0,2] },
+        # {'phys': 1, 'part': 11, 'view': 'N', 'cond': [0,2] },
+        # {'phys': 1, 'part': 16, 'view': 'N', 'cond': [0,2] },
+        # {'phys': 1, 'part': 4, 'view': 'E', 'cond': [0,2] },
+        # {'phys': 1, 'part': 19, 'view': 'N', 'cond': [0,1] },
+        # {'phys': 1, 'part': 19, 'view': 'N', 'cond': [0,2] },
+        #
+        # {'phys': 2, 'part': 1, 'view': 'N', 'cond': [0] },
+        # {'phys': 2, 'part': 2, 'view': 'N', 'cond': [0] },
+        # {'phys': 2, 'part': 11, 'view': 'E', 'cond': [0,2] },
+        # {'phys': 2, 'part': 9, 'view': 'E', 'cond': [0,2] },
+        # {'phys': 2, 'part': 2, 'view': 'N', 'cond': [0,2] },
+        # {'phys': 2, 'part': 13, 'view': 'S', 'cond': [0,1] },
+        # {'phys': 2, 'part': 7, 'view': 'N', 'cond': [0,2] },
+        # {'phys': 2, 'part': 15, 'view': 'S', 'cond': [0,2] },
+        # {'phys': 2, 'part': 4, 'view': 'E', 'cond': [0,2] },
+        #
+        # {'phys': 3, 'part': 4, 'view': 'N', 'cond': [0] },
+        # {'phys': 3, 'part': 14, 'view': 'N', 'cond': [0] },
+        # {'phys': 3, 'part': 1, 'view': 'N', 'cond': [0] },
+        # {'phys': 3, 'part': 1, 'view': 'N', 'cond': [0] },
+        # {'phys': 3, 'part': 14, 'view': 'E', 'cond': [0,1] },
+        # {'phys': 3, 'part': 14, 'view': 'E', 'cond': [0,2] },
+        # {'phys': 3, 'part': 1, 'view': 'N', 'cond': [0,2] },
+        # {'phys': 3, 'part': 7, 'view': 'E', 'cond': [0,2] },
+        # {'phys': 3, 'part': 8, 'view': 'E', 'cond': [0,2] },
+        # {'phys': 3, 'part': 12, 'view': 'N', 'cond': [0,1] },
+        # {'phys': 3, 'part': 12, 'view': 'N', 'cond': [0,2] },
+        # {'phys': 3, 'part': 7, 'view': 'E', 'cond': [0] },
+        # {'phys': 3, 'part': 10, 'view': 'E', 'cond': [0] },
+        #
+        # {'phys': 4, 'part': 4, 'view': 'N', 'cond': [0] },
+        # {'phys': 4, 'part': 1, 'view': 'N', 'cond': [0] },
+        # {'phys': 4, 'part': 3, 'view': 'N', 'cond': [0] },
+        # {'phys': 4, 'part': 2, 'view': 'N', 'cond': [0] },
+        # {'phys': 4, 'part': 5, 'view': 'N', 'cond': [0,1] },
+        # {'phys': 4, 'part': 16, 'view': 'S', 'cond': [0,1] },
+        # {'phys': 4, 'part': 3, 'view': 'N', 'cond': [0,1] },
+        # {'phys': 4, 'part': 6, 'view': 'N', 'cond': [0,1] },
+        # {'phys': 4, 'part': 10, 'view': 'N', 'cond': [0,1] },
+        # {'phys': 4, 'part': 17, 'view': 'N', 'cond': [0,2] },
+        #
+        # {'phys': 5, 'part': 1, 'view': 'N', 'cond': [0] },
+        # {'phys': 5, 'part': 8, 'view': 'N', 'cond': [0,1] },
+        # {'phys': 5, 'part': 8, 'view': 'N', 'cond': [0,2] },
+        # {'phys': 5, 'part': 14, 'view': 'N', 'cond': [0,2] },
+        # {'phys': 5, 'part': 6, 'view': 'E', 'cond': [0,2] },
+        # {'phys': 5, 'part': 6, 'view': 'E', 'cond': [0] },
+        #
+        # {'phys': 6, 'part': 1, 'view': 'N', 'cond': [0] },
+        # {'phys': 6, 'part': 7, 'view': 'N', 'cond': [0] },
+        # {'phys': 6, 'part': 3, 'view': 'N', 'cond': [0,2] },
+        # {'phys': 6, 'part': 4, 'view': 'S', 'cond': [0,2] },
+        # {'phys': 6, 'part': 8, 'view': 'W', 'cond': [0,2] },
+        # {'phys': 6, 'part': 14, 'view': 'S', 'cond': [0,1] },
+        # {'phys': 6, 'part': 9, 'view': 'N', 'cond': [0,1] },
+        # {'phys': 6, 'part': 15, 'view': 'N', 'cond': [0,2] },
+        # {'phys': 6, 'part': 7, 'view': 'E', 'cond': [0,2] },
+        # {'phys': 6, 'part': 2, 'view': 'S', 'cond': [0,2] },
+        # {'phys': 6, 'part': 7, 'view': 'S', 'cond': [0,2] },
+        # {'phys': 6, 'part': 15, 'view': 'S', 'cond': [0,2] },
+        # {'phys': 6, 'part': 5, 'view': 'N', 'cond': [0,1] },
+        # {'phys': 6, 'part': 15, 'view': 'N', 'cond': [0,1] },
+        # {'phys': 6, 'part': 15, 'view': 'N', 'cond': [0,2] },
+        # {'phys': 6, 'part': 11, 'view': 'N', 'cond': [0,1] },
+        {'phys': 6, 'part': 16, 'view': 'W', 'cond': [0,1] },
+        {'phys': 6, 'part': 16, 'view': 'W', 'cond': [0,2] },
 
     ]
 
@@ -178,7 +214,7 @@ def calc(input: str, delimiter: str) -> None:
         possible_functions = [x[0] for x in inspect.getmembers(maths, inspect.isfunction)]
         possible_functions.reverse()
         show_options = [str(i) + '. ' + x for i, x in enumerate(possible_functions, 1)]
-        print("\n".join(show_options) + "\n")
+        click.echo("\n".join(show_options) + "\n")
 
         chosen_function_nr = click.prompt("  Calulation", type=click.Choice([str(x) for x in range(1,len(possible_functions)+1)]))
         chosen_function = possible_functions[int(chosen_function_nr)-1]
@@ -189,7 +225,7 @@ def calc(input: str, delimiter: str) -> None:
 
             # run the chosen method, with options: getattr(maths, chosen_function)(**options)
             result = getattr(maths, chosen_function)(frame)
-            print(result)
+            click.echo(result)
 
             click.echo(f"\nFinished calculation.\n")
         except Exception as e:
@@ -202,53 +238,3 @@ def calc(input: str, delimiter: str) -> None:
 
 
     click.echo(f"\nTill next time!\n")
-
-
-
-
-
-'''
-# optional choice of performing different calculations, removed as not needed anymore
-@click.command()
-@click.option("--delimiter", "-d", default=";", help="Delimiter used in your csv files. Default is ';'")
-@click.option("--input", "-i", default="output/combined.csv", help="The location of the large .csv file compiled by collect(). Default is 'output/combined.csv'")
-def calc(input: str, delimiter: str) -> None:
-    click.echo(f"Press 'control+c' to abort this program at any point.")
-
-    click.echo(f"\nWhich calculation do you want to perform?\n")
-    frame = helpers.get_large_csv(input, delimiter)
-    # print(frame.info())
-
-    repeat = True
-
-    while repeat:
-        repeat = False
-
-        # get user input
-        possible_functions = [x[0] for x in inspect.getmembers(maths, inspect.isfunction)]
-        possible_functions.reverse()
-        show_options = [str(i) + '. ' + x for i, x in enumerate(possible_functions, 1)]
-        print("\n".join(show_options) + "\n")
-
-        chosen_function_nr = click.prompt("  Calulation", type=click.Choice([str(x) for x in range(1,len(possible_functions)+1)]))
-        chosen_function = possible_functions[int(chosen_function_nr)-1]
-
-        # display result, or err
-        try:
-            click.echo(f"\nRunning '{chosen_function}':\n")
-
-            # run the chosen method, with options: getattr(maths, chosen_function)(**options)
-            getattr(maths, chosen_function)(frame)
-
-            click.echo(f"\nFinished calculation.\n")
-        except Exception as e:
-            print(f"An error occured in the {chosen_function} calculation: {e}")
-
-        # possibly visualise another one
-        repeat = False
-        if click.confirm('Would you like to conduct another calculation?'):
-            repeat = True
-
-
-    click.echo(f"\nTill next time!\n")
-'''

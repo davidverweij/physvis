@@ -34,12 +34,16 @@ def printvis(frame: pd.DataFrame, tasks: list, data:list = None) -> None:
 
     colorscale = [
         [0, 'rgb(29,123,180)'],
-        [.33, 'rgb(57,177,135)'],
-        [.66, 'rgb(241,206,28)'],
-        [1, 'rgb(238,116,73)']
+        [.25, 'rgb(57,177,135)'],
+        [.5, 'rgb(241,206,28)'],
+        [.75, 'rgb(238,116,73)'],
+        [1, 'rgb(37,55,123)']
     ]
 
-    datacolorscale = 'Reds'
+    datacolorscale = [
+        [0, 'rgb(255,255,255)'],
+        [1, 'rgb(255,0,0)']
+    ]
 
     for task in tasks:
 
@@ -73,7 +77,9 @@ def printvis(frame: pd.DataFrame, tasks: list, data:list = None) -> None:
             annotations = []
 
             if 'data' in task:
-                max_value = data[task['data']-1].loc[task['phys']].max();
+                #  max_value = data[task['data']-1].loc[task['phys']].max();
+                max_value = data[task['data']-1].max().max();
+                print(f"max = {max_value}")
 
             for row in all_cubes.itertuples():
                 cubeID = row.Index[-1]
@@ -100,7 +106,7 @@ def printvis(frame: pd.DataFrame, tasks: list, data:list = None) -> None:
                         y=[c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx'], c['y']+c['wx'], c['y']-c['wx']],
                         z=[c['wz'],        c['wz'],        0,              0,              c['wz'],        c['wz'],        0,               0],
                         value=[0 if 'baseline' in task
-                               else (cubevalue if 'data' in task else row.g-1)
+                               else ((-4 if cubevalue == 0 else cubevalue) if 'data' in task else row.g-1)
                                ]*8,
                         hoverinfo="none",
                         showscale=False,
@@ -108,8 +114,8 @@ def printvis(frame: pd.DataFrame, tasks: list, data:list = None) -> None:
                         contour=dict(
                             show=True
                             ),
-                        isomin=0,       # remove the 'dark blue' harder to see
-                        isomax=3 if not 'data' in task else max_value,
+                        isomin=0 if not 'data' in task else -4,       # remove the 'dark blue' harder to see
+                        isomax=4 if not 'data' in task else max_value,
                         colorscale=datacolorscale if 'data' in task else colorscale,
                         lighting = dict(
                             diffuse=.9,
@@ -120,19 +126,20 @@ def printvis(frame: pd.DataFrame, tasks: list, data:list = None) -> None:
                 )
 
                 if 'data' in task:
-                    annotations.append(dict(
-                        x=c['x'],
-                        y=c['y'],
-                        z=c['wz'] + .5,
-                        text=str(cubevalue),
-                        showarrow=False,
-                        bgcolor="rgba(255,255,255,.7)",
-                        font=dict(
-                            color="black",
-                            size=12
-                        ),
+                    if cubevalue > 0:
+                        annotations.append(dict(
+                            x=c['x'],
+                            y=c['y'],
+                            z=c['wz'] + 1,
+                            text=' ' + str(cubevalue) + ' ',
+                            showarrow=False,
+                            # bgcolor="rgba(255,255,255,.7)",
+                            font=dict(
+                                color="black",
+                                size=20
+                            ),
+                            )
                         )
-                    )
 
         fig.update_layout(
             margin=dict(l=0, r=0, t=0, b=0),
