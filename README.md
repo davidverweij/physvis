@@ -5,6 +5,10 @@ A command line interface (CLI) to reconstruct, visualise and analyse data from p
 
 > This is a tool originally written for a single use case - so bear with me on the sloppiness. I intend to transfer this tool to colleagues in a modular fashion - this process is a work-in-progress.
 
+![Example reconstruction of a physicalisation](/assets/example.jpg)
+
+_Example reconstruction of a physicalisation_
+
 ## Installing
 
 [Poetry](https://python-poetry.org/) is used for dependency management and
